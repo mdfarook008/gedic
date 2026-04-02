@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEDIC — Global Emergency Digital Identity Card</title>
+
+<!-- Favicon: inline SVG, no file needed, prevents favicon.ico 404 -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚑</text></svg>">
+
+<!-- Styles -->
+<link rel="stylesheet" href="css/main.css">
+
+<!--
+  QR lib: jsdelivr (not cdnjs.cloudflare.com which Edge/Safari blocks)
+  Firebase: loaded SYNCHRONOUSLY so they are ready before app.js runs.
+  This fixes the file:// stuck-loading bug.
+-->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- GEDIC modules (order matters) -->
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/phone.js"></script>
+<script src="js/location.js"></script>
+<script src="js/whatsapp.js"></script>
+<script src="js/sms.js"></script>
+<script src="js/print.js"></script>
+<script src="js/emergency.js"></script>
+<script src="js/patient.js"></script>
+<script src="js/doctor.js"></script>
+<script src="js/hospital.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════ LOADING SCREEN ════════════════ -->
+<div id="loadScreen">
+  <div class="load-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+  </div>
+  <div class="load-txt">Connecting to GEDIC…</div>
+  <div class="load-sub" id="loadSub">Starting up…</div>
+</div>
+
+<!-- ═══════════════ TOAST ════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ MODAL: WhatsApp ══════════════════ -->
+<div class="overlay" id="modWA">
+  <div class="modal">
+    <div class="mhead">
+      <h3>📲 Share via WhatsApp</h3>
+      <button class="mclose" onclick="closeModal('modWA')">✕</button>
+    </div>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Choose who to alert:</p>
+    <div class="share-list">
+      <button class="share-item" onclick="doWA('doctor')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">🩺</div>
+        <div><span>Send to Doctor</span><span class="si-sub" id="waDocLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doWA('family')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">👨‍👩‍👧</div>
+        <div><span>Send to Family</span><span class="si-sub" id="waFamLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doWA('ambulance')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">🚑</div>
+        <div><span>Ambulance / 108</span><span class="si-sub">National Emergency Service</span></div>
+      </button>
+      <button class="share-item" onclick="doWA('general')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">📤</div>
+        <div><span>General Share</span><span class="si-sub">Open WhatsApp share sheet</span></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: SMS ═══════════════════════ -->
+<div class="overlay" id="modSMS">
+  <div class="modal">
+    <div class="mhead">
+      <h3>📱 Send Emergency SMS</h3>
+      <button class="mclose" onclick="closeModal('modSMS')">✕</button>
+    </div>
+    <div class="share-list">
+      <button class="share-item" onclick="doSMS('doctor')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">🩺</div>
+        <div><span>SMS to Doctor</span><span class="si-sub" id="smsDocLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doSMS('family')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">👨‍👩‍👧</div>
+        <div><span>SMS to Family</span><span class="si-sub" id="smsFamLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doSMS('ambulance')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">🚑</div>
+        <div><span>SMS to Ambulance (108)</span><span class="si-sub">National Ambulance</span></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: Delete Confirm ════════════ -->
+<div class="overlay" id="modConfirm">
+  <div class="modal" style="max-width:380px">
+    <div class="mhead">
+      <h3>⚠️ Confirm Delete</h3>
+      <button class="mclose" onclick="closeModal('modConfirm')">✕</button>
+    </div>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px" id="confirmMsg">Delete this record?</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modConfirm')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1" id="confirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: Add / Edit Patient ════════ -->
+<div class="overlay" id="modPat">
+  <div class="modal" style="max-width:540px">
+    <div class="mhead">
+      <h3 id="patModalTitle">+ Add Patient</h3>
+      <button class="mclose" onclick="closeModal('modPat')">✕</button>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Full Name *</label><input id="apName" placeholder="Patient full name"></div>
+      <div class="fg"><label>Age</label><input id="apAge" type="number" placeholder="Age"></div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Blood Group</label>
+        <select id="apBlood">
+          <option value="">Select</option><option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option><option>O+</option><option>O-</option>
+          <option>AB+</option><option>AB-</option>
+        </select>
+      </div>
+      <div class="fg"><label>Hospital</label><input id="apHosp" placeholder="Hospital name"></div>
+    </div>
+    <div class="fg"><label>Diseases / Conditions</label><textarea id="apDis" rows="2" placeholder="e.g. Diabetes, Hypertension"></textarea></div>
+    <div class="fg"><label>Allergies ⚠️</label><textarea id="apAll" rows="2" placeholder="e.g. Penicillin, Nuts"></textarea></div>
+    <div class="fg"><label>Medicines</label><textarea id="apMed" rows="2" placeholder="e.g. Metformin 500mg twice daily"></textarea></div>
+    <div class="frow">
+      <div class="fg"><label>Emergency Contact Name</label><input id="apEName" placeholder="Family member"></div>
+      <div class="fg">
+        <label>Emergency Phone (10 digits)</label>
+        <input id="apEPhone" type="tel" placeholder="9876543210" maxlength="13"
+          oninput="livePhone(this,'apEPhone_fb')">
+        <div id="apEPhone_fb" class="phone-fb"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Doctor Name</label><input id="apDName" placeholder="Dr. Name"></div>
+      <div class="fg">
+        <label>Doctor Phone (10 digits)</label>
+        <input id="apDPhone" type="tel" placeholder="9444455566" maxlength="13"
+          oninput="livePhone(this,'apDPhone_fb')">
+        <div id="apDPhone_fb" class="phone-fb"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modPat')">Cancel</button>
+      <button class="btn btn-red" style="flex:1" id="apSaveBtn" onclick="savePatRecord()">💾 Save to Database</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP ═══════════════════════ -->
+<div id="app">
+
+  <!-- ══════ LANDING ══════ -->
+  <div class="page active" id="pg-land">
+    <nav class="topbar">
+      <div class="logo">
+        <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <span>GED<span>IC</span></span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-outline" onclick="go('pg-login')">Sign In</button>
+        <button class="btn btn-red"     onclick="go('pg-register')">Register Free</button>
+      </div>
+    </nav>
+    <div class="hero">
+      <div class="badge-hero">🩺 Free · Firebase Cloud · Works on any device</div>
+      <h1>Emergency Medical ID<br><em>That Works Everywhere</em></h1>
+      <p>One QR scan gives doctors and first responders instant access to critical medical data — stored securely in Firebase, accessible worldwide.</p>
+      <div class="hero-btns">
+        <button class="btn btn-red btn-lg"     onclick="go('pg-register')">🆓 Create My GEDIC</button>
+        <button class="btn btn-ghost btn-lg"   onclick="go('pg-login')">Sign In</button>
+        <button class="btn btn-outline btn-lg" onclick="demoView()">👁 Emergency Demo</button>
+      </div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat card"><div class="feat-icon">☁️</div><h4>Cloud Database</h4><p>Stored in Firebase Firestore — accessible from any device, anywhere.</p></div>
+      <div class="feat card"><div class="feat-icon">🔍</div><h4>QR Emergency Card</h4><p>Personal QR links to your live medical profile. No app needed to scan.</p></div>
+      <div class="feat card"><div class="feat-icon">📲</div><h4>WhatsApp + SMS</h4><p>One tap sends your location and full medical info to doctor or family.</p></div>
+      <div class="feat card"><div class="feat-icon">🖨️</div><h4>Print as Card</h4><p>Print a physical wallet-sized emergency card with QR code to carry with you.</p></div>
+    </div>
+  </div>
+
+  <!-- ══════ LOGIN ══════ -->
+  <div class="page" id="pg-login">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <button class="btn btn-ghost" onclick="go('pg-land')">← Back</button>
+    </nav>
+    <div class="auth-wrap">
+      <div class="auth-box">
+        <h2>Welcome back</h2>
+        <p class="sub">Sign in to your GEDIC account</p>
+        <!-- Emails written without @ to prevent Cloudflare email obfuscation -->
+        <div class="demo-hint">
+          🔑 Demo accounts:<br>
+          Patient &nbsp;: <strong>patient [at] gedic.app</strong> / demo1234<br>
+          Doctor &nbsp;&nbsp;: <strong>doctor [at] gedic.app</strong> / demo1234<br>
+          Hospital : <strong>hospital [at] gedic.app</strong> / demo1234<br>
+          <small style="color:var(--ink5)">(replace [at] with @ when typing)</small>
+        </div>
+        <div class="alert alert-err" id="loginErr"></div>
+        <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') doLogin()"></div>
+        <button class="btn btn-red btn-xl" id="loginBtn" onclick="doLogin()">Sign In →</button>
+        <div class="divider"><span>new here?</span></div>
+        <button class="btn btn-ghost btn-xl" onclick="go('pg-register')">Create free account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ REGISTER ══════ -->
+  <div class="page" id="pg-register">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <button class="btn btn-ghost" onclick="go('pg-land')">← Back</button>
+    </nav>
+    <div class="auth-wrap" style="align-items:flex-start;padding-top:36px">
+      <div class="auth-box" style="max-width:540px">
+        <h2>Create your GEDIC</h2>
+        <p class="sub">Free forever · Cloud database · Any device</p>
+        <div class="alert alert-err" id="regErr"></div>
+
+        <div class="sh">Account Type</div>
+        <div class="role-grid">
+          <div class="role-opt sel" onclick="pickRole(this,'patient')">🧑‍⚕️ Patient</div>
+          <div class="role-opt"    onclick="pickRole(this,'doctor')">🩺 Doctor</div>
+          <div class="role-opt"    onclick="pickRole(this,'hospital')">🏥 Hospital</div>
+          <div class="role-opt"    onclick="pickRole(this,'responder')">🚑 Responder</div>
+        </div>
+
+        <div class="sh">Login Credentials</div>
+        <div class="frow">
+          <div class="fg"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
+          <div class="fg"><label>Password (min 6 chars)</label><input type="password" id="regPwd" placeholder="Secure password"></div>
+        </div>
+
+        <!-- Patient fields -->
+        <div id="fPatient">
+          <div class="sh">Medical Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name *</label><input id="rName" placeholder="Your full name"></div>
+            <div class="fg"><label>Age</label><input id="rAge" type="number" placeholder="Age" min="0" max="120"></div>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Blood Group</label>
+              <select id="rBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+            </div>
+            <div class="fg"><label>Hospital</label><input id="rHosp" placeholder="Your hospital name"></div>
+          </div>
+          <div class="fg"><label>Diseases / Conditions</label><textarea id="rDis" placeholder="e.g. Type 2 Diabetes, Hypertension" rows="2"></textarea></div>
+          <div class="fg"><label>Allergies ⚠️</label><textarea id="rAll" placeholder="e.g. Penicillin, Latex, Peanuts" rows="2"></textarea></div>
+          <div class="fg"><label>Current Medicines</label><textarea id="rMed" placeholder="e.g. Metformin 500mg twice daily" rows="2"></textarea></div>
+          <div class="frow">
+            <div class="fg"><label>Emergency Contact Name</label><input id="rEName" placeholder="e.g. Spouse / Parent"></div>
+            <div class="fg">
+              <label>Emergency Phone (10 digits)</label>
+              <input id="rEPhone" type="tel" placeholder="9876543210" maxlength="13" oninput="livePhone(this,'rEPhone_fb')">
+              <div id="rEPhone_fb" class="phone-fb"></div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label>Doctor Name</label><input id="rDName" placeholder="Dr. Name"></div>
+            <div class="fg">
+              <label>Doctor Phone (10 digits)</label>
+              <input id="rDPhone" type="tel" placeholder="9444455566" maxlength="13" oninput="livePhone(this,'rDPhone_fb')">
+              <div id="rDPhone_fb" class="phone-fb"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Doctor fields -->
+        <div id="fDoctor" style="display:none">
+          <div class="sh">Doctor Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name</label><input id="rDocName" placeholder="Dr. Your Name"></div>
+            <div class="fg"><label>Specialization</label><input id="rDocSpec" placeholder="e.g. Cardiology"></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label>Hospital</label><input id="rDocHosp" placeholder="Hospital name"></div>
+            <div class="fg">
+              <label>Phone (10 digits)</label>
+              <input id="rDocPhone" type="tel" placeholder="9444455566" maxlength="13" oninput="livePhone(this,'rDocPhone_fb')">
+              <div id="rDocPhone_fb" class="phone-fb"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hospital fields -->
+        <div id="fHospital" style="display:none">
+          <div class="sh">Hospital Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Hospital Name</label><input id="rHospName" placeholder="Hospital name"></div>
+            <div class="fg"><label>Location</label><input id="rHospLoc" placeholder="City, State"></div>
+          </div>
+          <div class="fg">
+            <label>Phone (10 digits)</label>
+            <input id="rHospPhone" type="tel" placeholder="4428293333" maxlength="13" oninput="livePhone(this,'rHospPhone_fb')">
+            <div id="rHospPhone_fb" class="phone-fb"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-red btn-xl" id="regBtn" onclick="doRegister()" style="margin-top:8px">Create GEDIC Account →</button>
+        <div class="divider"><span>already have an account?</span></div>
+        <button class="btn btn-ghost btn-xl" onclick="go('pg-login')">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PATIENT DASHBOARD ══════ -->
+  <div class="page" id="pg-patient">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-red">Patient</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2 id="patGreet">My Emergency Profile</h2><p>Your medical identity card is live and accessible worldwide.</p></div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(this,'tp-profile')">🪪 Profile</button>
+        <button class="tab"        onclick="switchTab(this,'tp-qr')">📲 QR Card</button>
+        <button class="tab"        onclick="switchTab(this,'tp-actions')">🚨 Emergency</button>
+        <button class="tab"        onclick="switchTab(this,'tp-edit')">✏️ Edit</button>
+      </div>
+
+      <!-- Profile -->
+      <div class="tab-pane active" id="tp-profile">
+        <div class="sh">Medical Identity</div>
+        <div class="pgrid" id="profDisplay"></div>
+      </div>
+
+      <!-- QR Card -->
+      <div class="tab-pane" id="tp-qr">
+        <div class="qr-panel">
+          <div style="font-weight:800;font-size:1rem;margin-bottom:4px">Your Emergency QR Code</div>
+          <p style="color:var(--muted);font-size:.8rem">Share or print — anyone can scan for your full medical info</p>
+          <div id="qrcode"></div>
+          <div class="qr-url" id="qrUrl"></div>
+          <div class="qr-btns">
+            <button class="btn btn-red"   onclick="dlQR()">⬇ Download QR</button>
+            <button class="btn btn-ghost" onclick="copyQR()">🔗 Copy Link</button>
+            <button class="btn btn-ghost" onclick="printCard()">🖨️ Print Card</button>
+          </div>
+        </div>
+        <div style="margin-top:14px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:14px 16px;font-size:.82rem;color:var(--muted)">
+          💡 <strong style="color:#818cf8">Print Card</strong> opens a physical wallet-sized emergency card with your QR code. You can print it and keep it in your wallet or ID card holder.
+        </div>
+      </div>
+
+      <!-- Emergency Actions -->
+      <div class="tab-pane" id="tp-actions">
+        <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:.82rem;color:var(--muted)">
+          <span style="color:var(--red);font-weight:700">⚡ EMERGENCY ACTIONS</span> — Live GPS location auto-attached to all messages.
+        </div>
+        <div class="sh">📞 Call</div>
+        <div class="agrid">
+          <button class="aBtn call" onclick="callNum('family')"><div class="ai">📞</div><div class="al">Emergency Contact<span class="as" id="aFamLbl">—</span></div></button>
+          <button class="aBtn call" onclick="callNum('doctor')"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="aDocLbl">—</span></div></button>
+          <button class="aBtn emer" onclick="callNum('108')"><div class="ai">🚑</div><div class="al">Ambulance 108<span class="as">National Emergency India</span></div></button>
+        </div>
+        <div class="sh">💬 Message</div>
+        <div class="agrid">
+          <button class="aBtn wa"  onclick="openMod('modWA')"><div class="ai">📲</div><div class="al">WhatsApp Alert<span class="as">Doctor · Family · Ambulance</span></div></button>
+          <button class="aBtn sms" onclick="openMod('modSMS')"><div class="ai">📱</div><div class="al">Emergency SMS<span class="as">With GPS location link</span></div></button>
+        </div>
+        <div class="sh">📍 Location & Card</div>
+        <div class="agrid">
+          <button class="aBtn loc"   onclick="openLoc()"><div class="ai">📍</div><div class="al">Open My Location<span class="as">Google Maps</span></div></button>
+          <button class="aBtn loc"   onclick="copyLoc()"><div class="ai">🗺</div><div class="al">Copy Location Link<span class="as">Paste anywhere</span></div></button>
+          <button class="aBtn print" onclick="printCard()"><div class="ai">🖨️</div><div class="al">Print Emergency Card<span class="as">Physical wallet card + QR</span></div></button>
+        </div>
+      </div>
+
+      <!-- Edit Profile -->
+      <div class="tab-pane" id="tp-edit">
+        <div class="card">
+          <div class="sh">Update Medical Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name</label><input id="eName"></div>
+            <div class="fg"><label>Age</label><input id="eAge" type="number"></div>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Blood Group</label>
+              <select id="eBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+            </div>
+            <div class="fg"><label>Hospital</label><input id="eHosp"></div>
+          </div>
+          <div class="fg"><label>Diseases</label><textarea id="eDis" rows="2"></textarea></div>
+          <div class="fg"><label>Allergies ⚠️</label><textarea id="eAll" rows="2"></textarea></div>
+          <div class="fg"><label>Medicines</label><textarea id="eMed" rows="2"></textarea></div>
+          <div class="frow">
+            <div class="fg"><label>Emergency Contact Name</label><input id="eEName"></div>
+            <div class="fg">
+              <label>Emergency Phone (10 digits)</label>
+              <input id="eEPhone" type="tel" maxlength="13" oninput="livePhone(this,'eEPhone_fb')">
+              <div id="eEPhone_fb" class="phone-fb"></div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label>Doctor Name</label><input id="eDName"></div>
+            <div class="fg">
+              <label>Doctor Phone (10 digits)</label>
+              <input id="eDPhone" type="tel" maxlength="13" oninput="livePhone(this,'eDPhone_fb')">
+              <div id="eDPhone_fb" class="phone-fb"></div>
+            </div>
+          </div>
+          <button class="btn btn-red" id="saveBtn" onclick="saveProfile()">💾 Save to Database</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ DOCTOR DASHBOARD ══════ -->
+  <div class="page" id="pg-doctor">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-green">Doctor</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2 id="docGreet">Doctor Dashboard</h2><p>Live patient registry from Firebase.</p></div>
+      <div class="stats" id="docStats"></div>
+      <div class="sh">Registered Patients</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Blood</th><th>Age</th><th>Conditions</th><th>Emergency Contact</th><th>Actions</th></tr></thead>
+          <tbody id="docTbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px"><span class="spinner"></span> Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ HOSPITAL DASHBOARD ══════ -->
+  <div class="page" id="pg-hospital">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-amber">Hospital</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2 id="hospGreet">Hospital Admin Panel</h2><p>Full cloud patient registry — add, edit, delete.</p></div>
+      <div class="stats" id="hospStats"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-red" onclick="openAddPat()">+ Add Patient Record</button>
+      </div>
+      <div class="sh">Patient Registry</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Blood</th><th>Age</th><th>Conditions</th><th>Allergies</th><th>Doctor</th><th>Actions</th></tr></thead>
+          <tbody id="hospTbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px"><span class="spinner"></span> Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ RESPONDER ══════ -->
+  <div class="page" id="pg-responder">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-red">Responder</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2>First Responder Search</h2><p>Find any patient by name instantly.</p></div>
+      <div class="card" style="margin-bottom:20px"><input id="respQ" placeholder="Search patient by name…" oninput="respSearch()"></div>
+      <div id="respResults"></div>
+    </div>
+  </div>
+
+  <!-- ══════ EMERGENCY PUBLIC VIEW ══════ -->
+  <div class="page" id="pg-emergency">
+    <div class="emg-stripe">🚨 EMERGENCY MEDICAL INFORMATION — SHOW THIS TO FIRST RESPONDERS</div>
+    <div class="emg-wrap">
+      <div class="emg-banner">
+        <div style="font-size:2.2rem;margin-bottom:8px">🆘</div>
+        <h2>EMERGENCY MEDICAL PROFILE</h2>
+        <p>QR Scan · Instant Access · No Login Required</p>
+      </div>
+      <div class="info-card">
+        <h3>Critical Information</h3>
+        <div class="irow"><span class="ik">👤 Patient</span><span class="iv" id="eN">—</span></div>
+        <div class="irow"><span class="ik">🩸 Blood Group</span><span class="iv"><span class="blood-tag" id="eB">—</span></span></div>
+        <div class="irow"><span class="ik">🎂 Age</span><span class="iv" id="eAg">—</span></div>
+        <div class="irow"><span class="ik">🏥 Hospital</span><span class="iv" id="eH">—</span></div>
+      </div>
+      <div class="info-card">
+        <h3>Medical Conditions</h3>
+        <div class="irow"><span class="ik">🫀 Conditions</span><span class="iv col-amber" id="eDis">—</span></div>
+        <div class="irow"><span class="ik">⚠️ Allergies</span><span class="iv col-red"   id="eAll">—</span></div>
+        <div class="irow"><span class="ik">💊 Medicines</span><span class="iv"           id="eMedE">—</span></div>
+      </div>
+      <div class="info-card">
+        <h3>Emergency Contacts</h3>
+        <div class="irow"><span class="ik">👨‍👩‍👧 Family</span><span class="iv col-green" id="eEName">—</span></div>
+        <div class="irow"><span class="ik">📞 Phone</span><span class="iv" id="eEPhone">—</span></div>
+        <div class="irow"><span class="ik">🩺 Doctor</span><span class="iv" id="eDName">—</span></div>
+        <div class="irow"><span class="ik">📞 Dr. Phone</span><span class="iv" id="eDPhone">—</span></div>
+      </div>
+      <div style="display:grid;gap:10px;margin-bottom:28px">
+        <button class="aBtn call" style="width:100%" onclick="callNum('family')"><div class="ai">📞</div><div class="al">Call Emergency Contact<span class="as" id="eCallFam">—</span></div></button>
+        <button class="aBtn call" style="width:100%" onclick="callNum('doctor')"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="eCallDoc">—</span></div></button>
+        <button class="aBtn wa"   style="width:100%" onclick="openMod('modWA')"><div class="ai">📲</div><div class="al">WhatsApp Emergency Alert<span class="as">Sends with GPS location</span></div></button>
+        <button class="aBtn sms"  style="width:100%" onclick="openMod('modSMS')"><div class="ai">📱</div><div class="al">Send Emergency SMS<span class="as">To doctor + GPS link</span></div></button>
+        <button class="aBtn loc"  style="width:100%" onclick="openLoc()"><div class="ai">📍</div><div class="al">Share Location<span class="as">Google Maps</span></div></button>
+        <button class="aBtn emer" style="width:100%" onclick="callNum('108')"><div class="ai">🚑</div><div class="al">Call Ambulance 108<span class="as">National Emergency</span></div></button>
+      </div>
+      <p style="text-align:center;color:var(--muted);font-size:.7rem;padding-bottom:40px">Powered by GEDIC · Firebase Cloud · Free Emergency Medical System</p>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ── Inline bootstrap: start app after DOM ready ── -->
+<script>
+// livePhone: called from oninput on phone fields
+function livePhone(inp, fbId) {
+  const fb = document.getElementById(fbId);
+  if (!fb) return;
+  const val = inp.value.trim();
+  if (!val) { fb.style.display = "none"; inp.style.borderColor = ""; return; }
+  const r = Phone.validate(val);
+  fb.textContent = r.msg;
+  fb.style.display = "block";
+  fb.className = "phone-fb " + (r.ok ? "phone-ok" : "phone-err");
+  inp.style.borderColor = r.ok ? "#059669" : "#dc2626";
+}
+
+// Responder search
+async function respSearch() {
+  const q   = (document.getElementById("respQ")?.value || "").toLowerCase().trim();
+  const el  = document.getElementById("respResults");
+  if (!q) { el.innerHTML = ""; return; }
+  const pts = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
+  const res = pts.filter(p => (p.name || "").toLowerCase().includes(q));
+  if (!res.length) { el.innerHTML = `<p style="color:var(--muted);font-size:.85rem">No patients found for "${q}".</p>`; return; }
+  el.innerHTML = res.map(p => `
+    <div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:700">${p.name}</div>
+        <div style="color:var(--muted);font-size:.8rem">${p.blood||"—"} · ${p.age||"—"} yrs · ${p.hospital||"—"}</div>
+        <div style="color:#f87171;font-size:.78rem">⚠️ ${p.allergies || "No allergies recorded"}</div>
+      </div>
+      <button class="btn btn-red" onclick="App.loadEmergencyView('${p.uid||p.id}')">🆘 View</button>
+    </div>`).join("");
+}
+
+// Init modal close-on-backdrop
+document.querySelectorAll(".overlay").forEach(m =>
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); })
+);
+
+// Start the app
+document.addEventListener("DOMContentLoaded", () => App.init());
+</script>
+
+</body>
+</html>

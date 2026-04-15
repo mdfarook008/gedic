@@ -2,1849 +2,578 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GEDIC — Global Emergency Digital Identity Card</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
-:root {
-  --red: #e63946;
-  --red-dark: #b5202d;
-  --red-glow: rgba(230,57,70,0.25);
-  --amber: #f4a261;
-  --green: #06d6a0;
-  --blue: #118ab2;
-  --white: #f8f9fa;
-  --off: #e9ecef;
-  --muted: #adb5bd;
-  --ink: #0d1117;
-  --ink2: #161b22;
-  --ink3: #21262d;
-  --ink4: #30363d;
-  --card: rgba(22,27,34,0.92);
-  --border: rgba(255,255,255,0.08);
-  --font-head: 'Syne', sans-serif;
-  --font-body: 'Nunito', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --r: 14px;
-  --shadow: 0 8px 32px rgba(0,0,0,0.45);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{
-  font-family:var(--font-body);
-  background:var(--ink);
-  color:var(--white);
-  min-height:100vh;
-  overflow-x:hidden;
-}
 
-/* ─── BG GRID ─────────────────────────── */
-body::before{
-  content:'';
-  position:fixed;inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
-  background-size:48px 48px;
-  pointer-events:none;z-index:0;
-}
-body::after{
-  content:'';
-  position:fixed;
-  top:-40%;left:-20%;
-  width:70vw;height:70vw;
-  background:radial-gradient(circle,rgba(230,57,70,.07) 0%,transparent 65%);
-  pointer-events:none;z-index:0;
-}
+<!-- Favicon: inline SVG, no file needed, prevents favicon.ico 404 -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚑</text></svg>">
 
-/* ─── LAYOUT ──────────────────────────── */
-#app{position:relative;z-index:1;min-height:100vh;}
-.page{display:none;min-height:100vh;}
-.page.active{display:block;}
+<!-- Styles -->
+<link rel="stylesheet" href="css/main.css">
 
-/* ─── TOPBAR ──────────────────────────── */
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;
-  background:rgba(13,17,23,.85);
-  backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:100;
-}
-.logo{
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--font-head);font-weight:800;font-size:1.15rem;
-  letter-spacing:-.01em;
-}
-.logo .pulse{
-  width:32px;height:32px;
-  background:var(--red);border-radius:8px;
-  display:grid;place-items:center;
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100%{box-shadow:0 0 0 0 var(--red-glow);}
-  50%{box-shadow:0 0 0 8px transparent;}
-}
-.logo span{color:var(--red);}
-.nav-btns{display:flex;gap:8px;flex-wrap:wrap;}
+<!--
+  QR lib: jsdelivr (not cdnjs.cloudflare.com which Edge/Safari blocks)
+  Firebase: loaded SYNCHRONOUSLY so they are ready before app.js runs.
+  This fixes the file:// stuck-loading bug.
+-->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-/* ─── BUTTONS ─────────────────────────── */
-.btn{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:9px 18px;border-radius:8px;border:none;cursor:pointer;
-  font-family:var(--font-body);font-weight:700;font-size:.85rem;
-  transition:all .18s ease;white-space:nowrap;
-}
-.btn-red{background:var(--red);color:#fff;}
-.btn-red:hover{background:var(--red-dark);transform:translateY(-1px);box-shadow:0 4px 16px var(--red-glow);}
-.btn-outline{background:transparent;color:var(--white);border:1.5px solid var(--border);}
-.btn-outline:hover{border-color:var(--red);color:var(--red);}
-.btn-ghost{background:var(--ink3);color:var(--white);}
-.btn-ghost:hover{background:var(--ink4);}
-.btn-green{background:var(--green);color:var(--ink);}
-.btn-green:hover{filter:brightness(1.1);}
-.btn-amber{background:var(--amber);color:var(--ink);}
-.btn-amber:hover{filter:brightness(1.1);}
-.btn-blue{background:var(--blue);color:#fff;}
-.btn-blue:hover{filter:brightness(1.15);}
-.btn-lg{padding:13px 26px;font-size:.95rem;border-radius:10px;}
-.btn-xl{padding:16px 32px;font-size:1rem;border-radius:12px;width:100%;justify-content:center;}
-.btn-whatsapp{background:#25D366;color:#fff;}
-.btn-whatsapp:hover{background:#1da851;}
-.btn-sms{background:#5856D6;color:#fff;}
-.btn-sms:hover{background:#4340c2;}
-
-/* ─── CARDS ───────────────────────────── */
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:24px;
-  backdrop-filter:blur(8px);
-}
-.card-red-top{border-top:3px solid var(--red);}
-
-/* ─── FORMS ───────────────────────────── */
-.form-group{margin-bottom:18px;}
-label{
-  display:block;margin-bottom:6px;
-  font-size:.8rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.07em;
-  color:var(--muted);
-}
-input,select,textarea{
-  width:100%;padding:11px 14px;
-  background:var(--ink3);border:1.5px solid var(--ink4);
-  border-radius:8px;color:var(--white);
-  font-family:var(--font-body);font-size:.92rem;
-  transition:border .15s;
-}
-input:focus,select:focus,textarea:focus{
-  outline:none;border-color:var(--red);
-  box-shadow:0 0 0 3px var(--red-glow);
-}
-textarea{resize:vertical;min-height:80px;}
-select option{background:var(--ink2);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-@media(max-width:600px){.form-row{grid-template-columns:1fr;}}
-
-/* ─── PAGE HERO ───────────────────────── */
-.hero{
-  text-align:center;
-  padding:80px 24px 48px;
-}
-.hero-badge{
-  display:inline-block;
-  background:rgba(230,57,70,.12);
-  border:1px solid rgba(230,57,70,.3);
-  color:var(--red);
-  font-size:.72rem;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;
-  padding:4px 14px;border-radius:99px;
-  margin-bottom:22px;
-}
-.hero h1{
-  font-family:var(--font-head);
-  font-size:clamp(2rem,5vw,3.4rem);
-  font-weight:800;line-height:1.1;
-  margin-bottom:16px;
-}
-.hero h1 em{
-  font-style:normal;
-  background:linear-gradient(135deg,var(--red),var(--amber));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.hero p{
-  color:var(--muted);
-  max-width:520px;margin:0 auto 32px;
-  font-size:1.05rem;line-height:1.65;
-}
-
-/* ─── LOGIN PAGE ──────────────────────── */
-.login-wrap{
-  display:flex;align-items:center;justify-content:center;
-  min-height:calc(100vh - 64px);padding:24px;
-}
-.login-box{width:100%;max-width:420px;}
-.role-tabs{
-  display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
-  margin-bottom:24px;
-}
-.role-tab{
-  padding:10px;border-radius:8px;border:1.5px solid var(--border);
-  background:var(--ink2);cursor:pointer;text-align:center;
-  font-family:var(--font-body);font-weight:700;font-size:.82rem;
-  color:var(--muted);transition:all .15s;
-}
-.role-tab.active{border-color:var(--red);color:var(--red);background:rgba(230,57,70,.08);}
-.role-tab:hover:not(.active){border-color:var(--ink4);color:var(--white);}
-.divider{
-  text-align:center;position:relative;margin:20px 0;
-  color:var(--muted);font-size:.8rem;
-}
-.divider::before{
-  content:'';position:absolute;top:50%;left:0;right:0;
-  height:1px;background:var(--border);
-}
-.divider span{background:var(--ink);padding:0 12px;position:relative;}
-.demo-badge{
-  background:rgba(6,214,160,.08);border:1px solid rgba(6,214,160,.2);
-  border-radius:8px;padding:10px 14px;margin-bottom:16px;
-  font-size:.8rem;color:var(--green);font-family:var(--font-mono);
-}
-.error-msg{
-  background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.3);
-  border-radius:8px;padding:10px 14px;color:var(--red);
-  font-size:.85rem;margin-bottom:16px;display:none;
-}
-
-/* ─── DASHBOARD ───────────────────────── */
-.dash{padding:24px;max-width:1100px;margin:0 auto;}
-.dash-header{margin-bottom:32px;}
-.dash-header h2{
-  font-family:var(--font-head);font-size:1.7rem;font-weight:800;
-  margin-bottom:4px;
-}
-.dash-header p{color:var(--muted);font-size:.9rem;}
-.stats-row{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:14px;margin-bottom:28px;
-}
-.stat-card{
-  background:var(--ink2);border:1px solid var(--border);
-  border-radius:12px;padding:18px;
-}
-.stat-card .num{
-  font-family:var(--font-head);font-size:2rem;font-weight:800;
-  color:var(--red);
-}
-.stat-card .lbl{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
-
-/* ─── PROFILE SECTION ─────────────────── */
-.section-title{
-  font-family:var(--font-head);font-size:1.1rem;font-weight:700;
-  margin-bottom:16px;display:flex;align-items:center;gap:8px;
-}
-.section-title::after{
-  content:'';flex:1;height:1px;background:var(--border);
-}
-.profile-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:16px;
-  margin-bottom:28px;
-}
-@media(max-width:700px){.profile-grid{grid-template-columns:1fr;}}
-.profile-field{
-  background:var(--ink2);border:1px solid var(--border);
-  border-radius:10px;padding:14px 16px;
-}
-.profile-field .pf-label{
-  font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;
-  color:var(--muted);margin-bottom:4px;
-}
-.profile-field .pf-val{
-  font-size:.95rem;font-weight:600;
-  word-break:break-word;
-}
-.blood-badge{
-  display:inline-block;
-  background:var(--red);color:#fff;
-  font-family:var(--font-head);font-size:1.2rem;font-weight:800;
-  padding:4px 16px;border-radius:8px;
-}
-
-/* ─── QR SECTION ──────────────────────── */
-.qr-panel{
-  background:linear-gradient(135deg,rgba(22,27,34,1) 0%,rgba(30,15,15,1) 100%);
-  border:1px solid rgba(230,57,70,.2);
-  border-radius:var(--r);padding:28px;
-  text-align:center;
-}
-#qrcode{
-  display:inline-block;
-  background:#fff;
-  padding:12px;border-radius:10px;
-  margin:16px auto;
-}
-.qr-url{
-  font-family:var(--font-mono);font-size:.72rem;
-  color:var(--muted);word-break:break-all;
-  background:var(--ink3);border-radius:6px;
-  padding:8px;margin:10px 0;
-}
-
-/* ─── EMERGENCY ACTIONS ───────────────── */
-.action-grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:12px;margin-bottom:24px;
-}
-.action-btn{
-  display:flex;align-items:center;gap:12px;
-  padding:16px 18px;border-radius:12px;border:none;
-  cursor:pointer;font-family:var(--font-body);font-weight:700;
-  font-size:.9rem;transition:all .18s;text-align:left;
-}
-.action-btn .icon{
-  width:40px;height:40px;border-radius:10px;
-  display:grid;place-items:center;font-size:1.2rem;
-  flex-shrink:0;
-}
-.action-btn.call{background:rgba(6,214,160,.08);border:1.5px solid rgba(6,214,160,.25);color:var(--green);}
-.action-btn.call .icon{background:rgba(6,214,160,.15);}
-.action-btn.call:hover{background:rgba(6,214,160,.15);}
-.action-btn.wa{background:rgba(37,211,102,.08);border:1.5px solid rgba(37,211,102,.25);color:#25D366;}
-.action-btn.wa .icon{background:rgba(37,211,102,.15);}
-.action-btn.wa:hover{background:rgba(37,211,102,.15);}
-.action-btn.sms{background:rgba(88,86,214,.08);border:1.5px solid rgba(88,86,214,.25);color:#818cf8;}
-.action-btn.sms .icon{background:rgba(88,86,214,.15);}
-.action-btn.sms:hover{background:rgba(88,86,214,.15);}
-.action-btn.loc{background:rgba(244,162,97,.08);border:1.5px solid rgba(244,162,97,.25);color:var(--amber);}
-.action-btn.loc .icon{background:rgba(244,162,97,.15);}
-.action-btn.loc:hover{background:rgba(244,162,97,.15);}
-.action-btn.danger{background:rgba(230,57,70,.08);border:1.5px solid rgba(230,57,70,.3);color:var(--red);}
-.action-btn.danger .icon{background:rgba(230,57,70,.15);}
-.action-btn.danger:hover{background:rgba(230,57,70,.15);}
-.action-btn .label{flex:1;}
-.action-btn .sub{font-size:.72rem;opacity:.6;font-weight:400;display:block;margin-top:1px;}
-
-/* ─── EMERGENCY VIEW ──────────────────── */
-.emergency-wrap{
-  max-width:520px;margin:0 auto;padding:24px;
-}
-.emergency-header{
-  background:linear-gradient(135deg,#b5202d,#e63946);
-  border-radius:14px;padding:28px;text-align:center;
-  margin-bottom:20px;position:relative;overflow:hidden;
-}
-.emergency-header::before{
-  content:'🚑';font-size:80px;opacity:.08;
-  position:absolute;right:-10px;top:-10px;
-}
-.emergency-header h2{
-  font-family:var(--font-head);font-size:1.5rem;font-weight:800;
-  letter-spacing:.02em;margin-bottom:4px;
-}
-.emergency-header p{font-size:.85rem;opacity:.8;}
-
-.med-card{
-  background:var(--ink2);border:1px solid var(--border);
-  border-radius:12px;padding:20px;margin-bottom:14px;
-}
-.med-card h3{
-  font-family:var(--font-head);font-size:.78rem;
-  text-transform:uppercase;letter-spacing:.1em;
-  color:var(--muted);margin-bottom:14px;
-}
-.info-row{
-  display:flex;justify-content:space-between;align-items:flex-start;
-  padding:8px 0;border-bottom:1px solid var(--border);gap:12px;
-}
-.info-row:last-child{border-bottom:none;}
-.info-row .ik{
-  font-size:.78rem;color:var(--muted);font-weight:700;
-  text-transform:uppercase;letter-spacing:.05em;
-  min-width:110px;flex-shrink:0;
-}
-.info-row .iv{font-size:.9rem;font-weight:600;text-align:right;}
-.tag-red{color:var(--red);}
-.tag-amber{color:var(--amber);}
-.tag-green{color:var(--green);}
-
-/* ─── PATIENTS TABLE ──────────────────── */
-.table-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;}
-th,td{
-  padding:12px 14px;text-align:left;
-  font-size:.83rem;border-bottom:1px solid var(--border);
-}
-th{
-  color:var(--muted);font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;
-  font-size:.72rem;
-}
-tr:hover td{background:rgba(255,255,255,.02);}
-
-/* ─── ALERTS ──────────────────────────── */
-.toast{
-  position:fixed;bottom:24px;right:24px;
-  background:var(--green);color:var(--ink);
-  padding:12px 20px;border-radius:10px;
-  font-weight:700;font-size:.88rem;z-index:9999;
-  transform:translateY(80px);opacity:0;
-  transition:all .3s cubic-bezier(.34,1.56,.64,1);
-}
-.toast.show{transform:translateY(0);opacity:1;}
-.toast.error{background:var(--red);color:#fff;}
-
-/* ─── MODAL ───────────────────────────── */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.7);
-  z-index:500;display:none;place-items:center;padding:20px;
-  backdrop-filter:blur(4px);
-}
-.modal-overlay.open{display:grid;}
-.modal-box{
-  background:var(--ink2);border:1px solid var(--border);
-  border-radius:16px;padding:28px;width:100%;max-width:480px;
-  animation:slideUp .25s ease;max-height:90vh;overflow-y:auto;
-}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-.modal-header{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:20px;
-}
-.modal-header h3{font-family:var(--font-head);font-size:1.15rem;font-weight:800;}
-.modal-close{
-  background:var(--ink3);border:none;color:var(--muted);
-  width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:1rem;
-}
-.modal-close:hover{color:var(--white);}
-
-/* ─── WA SHARE OPTIONS ────────────────── */
-.share-options{display:grid;gap:10px;margin-top:4px;}
-.share-opt{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;border-radius:10px;border:none;cursor:pointer;
-  background:var(--ink3);border:1px solid var(--border);
-  font-family:var(--font-body);font-weight:700;font-size:.88rem;
-  color:var(--white);transition:all .15s;text-align:left;
-}
-.share-opt:hover{border-color:rgba(37,211,102,.4);background:rgba(37,211,102,.06);}
-.share-opt .sicon{
-  width:38px;height:38px;border-radius:10px;
-  display:grid;place-items:center;font-size:1.2rem;
-  background:rgba(37,211,102,.12);flex-shrink:0;
-}
-
-/* ─── RESPONSIVE ──────────────────────── */
-@media(max-width:480px){
-  .topbar{padding:12px 16px;}
-  .dash{padding:16px;}
-  .action-grid{grid-template-columns:1fr;}
-  .stats-row{grid-template-columns:1fr 1fr;}
-  .form-row{grid-template-columns:1fr;}
-}
-
-/* ─── SCROLLBAR ───────────────────────── */
-::-webkit-scrollbar{width:6px;}
-::-webkit-scrollbar-track{background:var(--ink);}
-::-webkit-scrollbar-thumb{background:var(--ink4);border-radius:99px;}
-
-/* ─── TRANSITIONS ─────────────────────── */
-.fade-in{animation:fadeIn .35s ease;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
-
-.blink{animation:blink 1.4s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
-
-/* ─── ROLE INDICATOR ──────────────────── */
-.role-pill{
-  font-size:.7rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.08em;
-  padding:2px 10px;border-radius:99px;
-}
-.role-pill.patient{background:rgba(17,138,178,.15);color:#39b7e0;}
-.role-pill.doctor{background:rgba(6,214,160,.12);color:var(--green);}
-.role-pill.hospital{background:rgba(244,162,97,.12);color:var(--amber);}
-
-/* ─── TAB SWITCHER ────────────────────── */
-.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--ink2);border-radius:10px;padding:4px;}
-.tab{
-  flex:1;padding:9px;border-radius:8px;border:none;cursor:pointer;
-  background:transparent;color:var(--muted);
-  font-family:var(--font-body);font-weight:700;font-size:.82rem;
-  transition:all .15s;
-}
-.tab.active{background:var(--red);color:#fff;}
-.tab:hover:not(.active){color:var(--white);}
-.tab-content{display:none;}
-.tab-content.active{display:block;animation:fadeIn .25s ease;}
-</style>
+<!-- GEDIC modules (order matters) -->
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/phone.js"></script>
+<script src="js/location.js"></script>
+<script src="js/whatsapp.js"></script>
+<script src="js/sms.js"></script>
+<script src="js/print.js"></script>
+<script src="js/emergency.js"></script>
+<script src="js/patient.js"></script>
+<script src="js/doctor.js"></script>
+<script src="js/hospital.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
 </head>
 <body>
 
-<!-- ═══════════════ TOAST ═══════════════ -->
+<!-- ═══════════════ LOADING SCREEN ════════════════ -->
+<div id="loadScreen">
+  <div class="load-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+  </div>
+  <div class="load-txt">Connecting to GEDIC…</div>
+  <div class="load-sub" id="loadSub">Starting up…</div>
+</div>
+
+<!-- ═══════════════ TOAST ════════════════════════ -->
 <div class="toast" id="toast"></div>
 
-<!-- ═══════════════ WA MODAL ════════════ -->
-<div class="modal-overlay" id="waModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3>📲 Share Emergency via WhatsApp</h3>
-      <button class="modal-close" onclick="closeModal('waModal')">✕</button>
+<!-- ═══════════ MODAL: WhatsApp ══════════════════ -->
+<div class="overlay" id="modWA">
+  <div class="modal">
+    <div class="mhead">
+      <h3>📲 Share via WhatsApp</h3>
+      <button class="mclose" onclick="closeModal('modWA')">✕</button>
     </div>
-    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">Choose who should receive the emergency alert:</p>
-    <div class="share-options">
-      <button class="share-opt" onclick="handleWA('doctor')">
-        <span class="sicon">🩺</span>
-        <span><strong>Send to Doctor</strong><br><small style="opacity:.6;font-weight:400;">{{ doctorName }} ({{ doctorPhone }})</small></span>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Choose who to alert:</p>
+    <div class="share-list">
+      <button class="share-item" onclick="doWA('doctor')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">🩺</div>
+        <div><span>Send to Doctor</span><span class="si-sub" id="waDocLbl">—</span></div>
       </button>
-      <button class="share-opt" onclick="handleWA('family')">
-        <span class="sicon">👨‍👩‍👧</span>
-        <span><strong>Send to Family</strong><br><small style="opacity:.6;font-weight:400;">{{ emergencyName }}</small></span>
+      <button class="share-item" onclick="doWA('family')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">👨‍👩‍👧</div>
+        <div><span>Send to Family</span><span class="si-sub" id="waFamLbl">—</span></div>
       </button>
-      <button class="share-opt" onclick="handleWA('ambulance')">
-        <span class="sicon">🚑</span>
-        <span><strong>Send to Ambulance / 108</strong><br><small style="opacity:.6;font-weight:400;">Open WhatsApp share</small></span>
+      <button class="share-item" onclick="doWA('ambulance')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">🚑</div>
+        <div><span>Ambulance / 108</span><span class="si-sub">National Emergency Service</span></div>
       </button>
-      <button class="share-opt" onclick="handleWA('general')">
-        <span class="sicon">📤</span>
-        <span><strong>General Share</strong><br><small style="opacity:.6;font-weight:400;">Share with anyone</small></span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ SMS MODAL ════════════ -->
-<div class="modal-overlay" id="smsModal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3>📱 Send SMS Emergency Alert</h3>
-      <button class="modal-close" onclick="closeModal('smsModal')">✕</button>
-    </div>
-    <div class="share-options">
-      <button class="share-opt" onclick="handleSMS('doctor')">
-        <span class="sicon">🩺</span>
-        <span><strong>SMS to Doctor</strong><br><small id="smsDocPhone" style="opacity:.6;font-weight:400;"></small></span>
-      </button>
-      <button class="share-opt" onclick="handleSMS('family')">
-        <span class="sicon">👨‍👩‍👧</span>
-        <span><strong>SMS to Family</strong><br><small id="smsFamPhone" style="opacity:.6;font-weight:400;"></small></span>
-      </button>
-      <button class="share-opt" onclick="handleSMS('ambulance')">
-        <span class="sicon">🚑</span>
-        <span><strong>SMS to Ambulance (108)</strong><br><small style="opacity:.6;font-weight:400;">National Ambulance Service</small></span>
+      <button class="share-item" onclick="doWA('general')">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)">📤</div>
+        <div><span>General Share</span><span class="si-sub">Open WhatsApp share sheet</span></div>
       </button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ APP ═══════════════════ -->
+<!-- ═══════════ MODAL: SMS ═══════════════════════ -->
+<div class="overlay" id="modSMS">
+  <div class="modal">
+    <div class="mhead">
+      <h3>📱 Send Emergency SMS</h3>
+      <button class="mclose" onclick="closeModal('modSMS')">✕</button>
+    </div>
+    <div class="share-list">
+      <button class="share-item" onclick="doSMS('doctor')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">🩺</div>
+        <div><span>SMS to Doctor</span><span class="si-sub" id="smsDocLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doSMS('family')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">👨‍👩‍👧</div>
+        <div><span>SMS to Family</span><span class="si-sub" id="smsFamLbl">—</span></div>
+      </button>
+      <button class="share-item" onclick="doSMS('ambulance')">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)">🚑</div>
+        <div><span>SMS to Ambulance (108)</span><span class="si-sub">National Ambulance</span></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: Delete Confirm ════════════ -->
+<div class="overlay" id="modConfirm">
+  <div class="modal" style="max-width:380px">
+    <div class="mhead">
+      <h3>⚠️ Confirm Delete</h3>
+      <button class="mclose" onclick="closeModal('modConfirm')">✕</button>
+    </div>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px" id="confirmMsg">Delete this record?</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modConfirm')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1" id="confirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: Add / Edit Patient ════════ -->
+<div class="overlay" id="modPat">
+  <div class="modal" style="max-width:540px">
+    <div class="mhead">
+      <h3 id="patModalTitle">+ Add Patient</h3>
+      <button class="mclose" onclick="closeModal('modPat')">✕</button>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Full Name *</label><input id="apName" placeholder="Patient full name"></div>
+      <div class="fg"><label>Age</label><input id="apAge" type="number" placeholder="Age"></div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Blood Group</label>
+        <select id="apBlood">
+          <option value="">Select</option><option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option><option>O+</option><option>O-</option>
+          <option>AB+</option><option>AB-</option>
+        </select>
+      </div>
+      <div class="fg"><label>Hospital</label><input id="apHosp" placeholder="Hospital name"></div>
+    </div>
+    <div class="fg"><label>Diseases / Conditions</label><textarea id="apDis" rows="2" placeholder="e.g. Diabetes, Hypertension"></textarea></div>
+    <div class="fg"><label>Allergies ⚠️</label><textarea id="apAll" rows="2" placeholder="e.g. Penicillin, Nuts"></textarea></div>
+    <div class="fg"><label>Medicines</label><textarea id="apMed" rows="2" placeholder="e.g. Metformin 500mg twice daily"></textarea></div>
+    <div class="frow">
+      <div class="fg"><label>Emergency Contact Name</label><input id="apEName" placeholder="Family member"></div>
+      <div class="fg">
+        <label>Emergency Phone (10 digits)</label>
+        <input id="apEPhone" type="tel" placeholder="9876543210" maxlength="13"
+          oninput="livePhone(this,'apEPhone_fb')">
+        <div id="apEPhone_fb" class="phone-fb"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Doctor Name</label><input id="apDName" placeholder="Dr. Name"></div>
+      <div class="fg">
+        <label>Doctor Phone (10 digits)</label>
+        <input id="apDPhone" type="tel" placeholder="9444455566" maxlength="13"
+          oninput="livePhone(this,'apDPhone_fb')">
+        <div id="apDPhone_fb" class="phone-fb"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modPat')">Cancel</button>
+      <button class="btn btn-red" style="flex:1" id="apSaveBtn" onclick="savePatRecord()">💾 Save to Database</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP ═══════════════════════ -->
 <div id="app">
 
-  <!-- ══ LANDING PAGE ══ -->
-  <div class="page active" id="page-landing">
+  <!-- ══════ LANDING ══════ -->
+  <div class="page active" id="pg-land">
     <nav class="topbar">
       <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
+        <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <span>GED<span>IC</span></span>
       </div>
-      <div class="nav-btns">
-        <button class="btn btn-outline" onclick="showPage('page-login')">Login</button>
-        <button class="btn btn-red" onclick="showPage('page-register')">Register Free</button>
+      <div class="topbar-right">
+        <button class="btn btn-outline" onclick="go('pg-login')">Sign In</button>
+        <button class="btn btn-red"     onclick="go('pg-register')">Register Free</button>
       </div>
     </nav>
-    <div class="hero fade-in">
-      <div class="hero-badge">🚑 Free · No Backend · Instant Access</div>
-      <h1>Global Emergency<br><em>Digital Identity Card</em></h1>
-      <p>One QR scan gives paramedics, doctors and first responders instant access to your critical medical information — even if you're unconscious.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-red btn-lg" onclick="showPage('page-register')">🆓 Create My GEDIC</button>
-        <button class="btn btn-ghost btn-lg" onclick="showPage('page-login')">Sign In</button>
-        <button class="btn btn-ghost btn-lg" onclick="demoEmergencyView()">👁 Emergency Demo</button>
+    <div class="hero">
+      <div class="badge-hero">🩺 Free · Firebase Cloud · Works on any device</div>
+      <h1>Emergency Medical ID<br><em>That Works Everywhere</em></h1>
+      <p>One QR scan gives doctors and first responders instant access to critical medical data — stored securely in Firebase, accessible worldwide.</p>
+      <div class="hero-btns">
+        <button class="btn btn-red btn-lg"     onclick="go('pg-register')">🆓 Create My GEDIC</button>
+        <button class="btn btn-ghost btn-lg"   onclick="go('pg-login')">Sign In</button>
+        <button class="btn btn-outline btn-lg" onclick="demoView()">👁 Emergency Demo</button>
       </div>
     </div>
-
-    <!-- Feature cards -->
-    <div style="padding:0 24px 60px;max-width:1000px;margin:0 auto;">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
-        <div class="card card-red-top">
-          <div style="font-size:2rem;margin-bottom:10px;">🔍</div>
-          <h3 style="font-family:var(--font-head);font-weight:800;margin-bottom:8px;">QR Code Identity</h3>
-          <p style="color:var(--muted);font-size:.88rem;line-height:1.6;">Generate a personal QR code that links to your emergency medical profile. Print it, save it, wear it.</p>
-        </div>
-        <div class="card card-red-top">
-          <div style="font-size:2rem;margin-bottom:10px;">📲</div>
-          <h3 style="font-family:var(--font-head);font-weight:800;margin-bottom:8px;">Instant WhatsApp Alert</h3>
-          <p style="color:var(--muted);font-size:.88rem;line-height:1.6;">One tap sends a fully detailed emergency message with your location to doctor, family or ambulance.</p>
-        </div>
-        <div class="card card-red-top">
-          <div style="font-size:2rem;margin-bottom:10px;">🏥</div>
-          <h3 style="font-family:var(--font-head);font-weight:800;margin-bottom:8px;">Doctor & Hospital View</h3>
-          <p style="color:var(--muted);font-size:.88rem;line-height:1.6;">Doctors and hospital admins get a full patient list with medical history and emergency contact details.</p>
-        </div>
-        <div class="card card-red-top">
-          <div style="font-size:2rem;margin-bottom:10px;">📍</div>
-          <h3 style="font-family:var(--font-head);font-weight:800;margin-bottom:8px;">Live Location Share</h3>
-          <p style="color:var(--muted);font-size:.88rem;line-height:1.6;">Automatically fetches GPS coordinates and attaches a Google Maps link to every emergency message.</p>
-        </div>
-      </div>
+    <div class="feat-grid">
+      <div class="feat card"><div class="feat-icon">☁️</div><h4>Cloud Database</h4><p>Stored in Firebase Firestore — accessible from any device, anywhere.</p></div>
+      <div class="feat card"><div class="feat-icon">🔍</div><h4>QR Emergency Card</h4><p>Personal QR links to your live medical profile. No app needed to scan.</p></div>
+      <div class="feat card"><div class="feat-icon">📲</div><h4>WhatsApp + SMS</h4><p>One tap sends your location and full medical info to doctor or family.</p></div>
+      <div class="feat card"><div class="feat-icon">🖨️</div><h4>Print as Card</h4><p>Print a physical wallet-sized emergency card with QR code to carry with you.</p></div>
     </div>
   </div>
 
-  <!-- ══ LOGIN PAGE ══ -->
-  <div class="page" id="page-login">
+  <!-- ══════ LOGIN ══════ -->
+  <div class="page" id="pg-login">
     <nav class="topbar">
-      <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
-      </div>
-      <button class="btn btn-ghost" onclick="showPage('page-landing')">← Back</button>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <button class="btn btn-ghost" onclick="go('pg-land')">← Back</button>
     </nav>
-    <div class="login-wrap fade-in">
-      <div class="login-box">
-        <h2 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;margin-bottom:6px;">Welcome back</h2>
-        <p style="color:var(--muted);margin-bottom:24px;font-size:.9rem;">Sign in to access your emergency profile</p>
-
-        <div class="demo-badge">
-          🔑 Demo credentials:<br>
-          Patient: <strong>patient1 / pass123</strong><br>
-          Doctor: <strong>doctor1 / doc123</strong><br>
-          Hospital: <strong>hospital1 / hosp123</strong>
+    <div class="auth-wrap">
+      <div class="auth-box">
+        <h2>Welcome back</h2>
+        <p class="sub">Sign in to your GEDIC account</p>
+        <!-- Emails written without @ to prevent Cloudflare email obfuscation -->
+        <div class="demo-hint">
+          🔑 Demo accounts:<br>
+          Patient &nbsp;: <strong>patient [at] gedic.app</strong> / demo1234<br>
+          Doctor &nbsp;&nbsp;: <strong>doctor [at] gedic.app</strong> / demo1234<br>
+          Hospital : <strong>hospital [at] gedic.app</strong> / demo1234<br>
+          <small style="color:var(--ink5)">(replace [at] with @ when typing)</small>
         </div>
-
-        <div class="error-msg" id="loginError"></div>
-
-        <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password">
-        </div>
-        <button class="btn btn-red" style="width:100%;justify-content:center;padding:13px;" onclick="doLogin()">Sign In →</button>
+        <div class="alert alert-err" id="loginErr"></div>
+        <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') doLogin()"></div>
+        <button class="btn btn-red btn-xl" id="loginBtn" onclick="doLogin()">Sign In →</button>
         <div class="divider"><span>new here?</span></div>
-        <button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="showPage('page-register')">Create free account</button>
+        <button class="btn btn-ghost btn-xl" onclick="go('pg-register')">Create free account</button>
       </div>
     </div>
   </div>
 
-  <!-- ══ REGISTER PAGE ══ -->
-  <div class="page" id="page-register">
+  <!-- ══════ REGISTER ══════ -->
+  <div class="page" id="pg-register">
     <nav class="topbar">
-      <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
-      </div>
-      <button class="btn btn-ghost" onclick="showPage('page-landing')">← Back</button>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <button class="btn btn-ghost" onclick="go('pg-land')">← Back</button>
     </nav>
-    <div class="login-wrap fade-in" style="align-items:flex-start;padding-top:40px;">
-      <div class="login-box" style="max-width:560px;">
-        <h2 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;margin-bottom:6px;">Create your GEDIC</h2>
-        <p style="color:var(--muted);margin-bottom:24px;font-size:.9rem;">Free forever. No credit card. No backend.</p>
+    <div class="auth-wrap" style="align-items:flex-start;padding-top:36px">
+      <div class="auth-box" style="max-width:540px">
+        <h2>Create your GEDIC</h2>
+        <p class="sub">Free forever · Cloud database · Any device</p>
+        <div class="alert alert-err" id="regErr"></div>
 
-        <div class="role-tabs">
-          <div class="role-tab active" data-role="patient" onclick="selectRegRole(this,'patient')">🧑‍⚕️ Patient</div>
-          <div class="role-tab" data-role="doctor" onclick="selectRegRole(this,'doctor')">🩺 Doctor</div>
-          <div class="role-tab" data-role="hospital" onclick="selectRegRole(this,'hospital')">🏥 Hospital</div>
-          <div class="role-tab" data-role="emergency" onclick="selectRegRole(this,'emergency')">🚑 Responder</div>
+        <div class="sh">Account Type</div>
+        <div class="role-grid">
+          <div class="role-opt sel" onclick="pickRole(this,'patient')">🧑‍⚕️ Patient</div>
+          <div class="role-opt"    onclick="pickRole(this,'doctor')">🩺 Doctor</div>
+          <div class="role-opt"    onclick="pickRole(this,'hospital')">🏥 Hospital</div>
+          <div class="role-opt"    onclick="pickRole(this,'responder')">🚑 Responder</div>
         </div>
 
-        <div class="error-msg" id="regError"></div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="regUser" placeholder="Choose username">
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="regPass" placeholder="Min 4 chars">
-          </div>
+        <div class="sh">Login Credentials</div>
+        <div class="frow">
+          <div class="fg"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
+          <div class="fg"><label>Password (min 6 chars)</label><input type="password" id="regPwd" placeholder="Secure password"></div>
         </div>
 
-        <!-- Patient-specific fields -->
-        <div id="regPatientFields">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Full Name</label>
-              <input type="text" id="regName" placeholder="Your full name">
-            </div>
-            <div class="form-group">
-              <label>Age</label>
-              <input type="number" id="regAge" placeholder="Age">
-            </div>
+        <!-- Patient fields -->
+        <div id="fPatient">
+          <div class="sh">Medical Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name *</label><input id="rName" placeholder="Your full name"></div>
+            <div class="fg"><label>Age</label><input id="rAge" type="number" placeholder="Age" min="0" max="120"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
+          <div class="frow">
+            <div class="fg">
               <label>Blood Group</label>
-              <select id="regBlood">
-                <option value="">Select blood group</option>
-                <option>A+</option><option>A-</option>
-                <option>B+</option><option>B-</option>
-                <option>O+</option><option>O-</option>
-                <option>AB+</option><option>AB-</option>
-              </select>
+              <select id="rBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
             </div>
-            <div class="form-group">
-              <label>Hospital</label>
-              <input type="text" id="regHospital" placeholder="Your hospital">
-            </div>
+            <div class="fg"><label>Hospital</label><input id="rHosp" placeholder="Your hospital name"></div>
           </div>
-          <div class="form-group">
-            <label>Diseases / Conditions</label>
-            <textarea id="regDiseases" placeholder="e.g. Type 2 Diabetes, Hypertension" rows="2"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Allergies ⚠️</label>
-            <textarea id="regAllergies" placeholder="e.g. Penicillin, Latex, Nuts" rows="2"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Current Medicines</label>
-            <textarea id="regMedicines" placeholder="e.g. Metformin 500mg twice daily" rows="2"></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Emergency Contact Name</label>
-              <input type="text" id="regEmgName" placeholder="e.g. Spouse, Parent">
-            </div>
-            <div class="form-group">
-              <label>Emergency Phone</label>
-              <input type="tel" id="regEmgPhone" placeholder="+91 98765 43210">
+          <div class="fg"><label>Diseases / Conditions</label><textarea id="rDis" placeholder="e.g. Type 2 Diabetes, Hypertension" rows="2"></textarea></div>
+          <div class="fg"><label>Allergies ⚠️</label><textarea id="rAll" placeholder="e.g. Penicillin, Latex, Peanuts" rows="2"></textarea></div>
+          <div class="fg"><label>Current Medicines</label><textarea id="rMed" placeholder="e.g. Metformin 500mg twice daily" rows="2"></textarea></div>
+          <div class="frow">
+            <div class="fg"><label>Emergency Contact Name</label><input id="rEName" placeholder="e.g. Spouse / Parent"></div>
+            <div class="fg">
+              <label>Emergency Phone (10 digits)</label>
+              <input id="rEPhone" type="tel" placeholder="9876543210" maxlength="13" oninput="livePhone(this,'rEPhone_fb')">
+              <div id="rEPhone_fb" class="phone-fb"></div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Doctor Name</label>
-              <input type="text" id="regDocName" placeholder="Dr. Name">
-            </div>
-            <div class="form-group">
-              <label>Doctor Phone</label>
-              <input type="tel" id="regDocPhone" placeholder="+91 94444 55566">
+          <div class="frow">
+            <div class="fg"><label>Doctor Name</label><input id="rDName" placeholder="Dr. Name"></div>
+            <div class="fg">
+              <label>Doctor Phone (10 digits)</label>
+              <input id="rDPhone" type="tel" placeholder="9444455566" maxlength="13" oninput="livePhone(this,'rDPhone_fb')">
+              <div id="rDPhone_fb" class="phone-fb"></div>
             </div>
           </div>
         </div>
 
         <!-- Doctor fields -->
-        <div id="regDoctorFields" style="display:none;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Full Name</label>
-              <input type="text" id="regDocFullName" placeholder="Dr. Your Name">
-            </div>
-            <div class="form-group">
-              <label>Specialization</label>
-              <input type="text" id="regSpecialization" placeholder="e.g. Cardiology">
-            </div>
+        <div id="fDoctor" style="display:none">
+          <div class="sh">Doctor Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name</label><input id="rDocName" placeholder="Dr. Your Name"></div>
+            <div class="fg"><label>Specialization</label><input id="rDocSpec" placeholder="e.g. Cardiology"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Hospital</label>
-              <input type="text" id="regDocHospital" placeholder="Hospital name">
-            </div>
-            <div class="form-group">
-              <label>Contact Phone</label>
-              <input type="tel" id="regDocContactPhone" placeholder="+91 ...">
+          <div class="frow">
+            <div class="fg"><label>Hospital</label><input id="rDocHosp" placeholder="Hospital name"></div>
+            <div class="fg">
+              <label>Phone (10 digits)</label>
+              <input id="rDocPhone" type="tel" placeholder="9444455566" maxlength="13" oninput="livePhone(this,'rDocPhone_fb')">
+              <div id="rDocPhone_fb" class="phone-fb"></div>
             </div>
           </div>
         </div>
 
         <!-- Hospital fields -->
-        <div id="regHospitalFields" style="display:none;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Hospital Name</label>
-              <input type="text" id="regHospName" placeholder="Hospital name">
-            </div>
-            <div class="form-group">
-              <label>Location</label>
-              <input type="text" id="regHospLocation" placeholder="City, State">
-            </div>
+        <div id="fHospital" style="display:none">
+          <div class="sh">Hospital Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Hospital Name</label><input id="rHospName" placeholder="Hospital name"></div>
+            <div class="fg"><label>Location</label><input id="rHospLoc" placeholder="City, State"></div>
           </div>
-          <div class="form-group">
-            <label>Hospital Phone</label>
-            <input type="tel" id="regHospPhone" placeholder="+91 ...">
+          <div class="fg">
+            <label>Phone (10 digits)</label>
+            <input id="rHospPhone" type="tel" placeholder="4428293333" maxlength="13" oninput="livePhone(this,'rHospPhone_fb')">
+            <div id="rHospPhone_fb" class="phone-fb"></div>
           </div>
         </div>
 
-        <button class="btn btn-red" style="width:100%;justify-content:center;padding:13px;margin-top:8px;" onclick="doRegister()">Create GEDIC Account →</button>
+        <button class="btn btn-red btn-xl" id="regBtn" onclick="doRegister()" style="margin-top:8px">Create GEDIC Account →</button>
+        <div class="divider"><span>already have an account?</span></div>
+        <button class="btn btn-ghost btn-xl" onclick="go('pg-login')">Sign In</button>
       </div>
     </div>
   </div>
 
-  <!-- ══ PATIENT DASHBOARD ══ -->
-  <div class="page" id="page-patient">
+  <!-- ══════ PATIENT DASHBOARD ══════ -->
+  <div class="page" id="pg-patient">
     <nav class="topbar">
-      <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
-      </div>
-      <div class="nav-btns">
-        <span class="role-pill patient">Patient</span>
-        <button class="btn btn-ghost" onclick="doLogout()">Log out</button>
-      </div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-red">Patient</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
     </nav>
-    <div class="dash fade-in">
-      <div class="dash-header">
-        <h2 id="patGreeting">My Emergency Profile</h2>
-        <p style="color:var(--muted);">Your medical identity card is active and ready to share.</p>
-      </div>
-
+    <div class="dash">
+      <div class="dhead"><h2 id="patGreet">My Emergency Profile</h2><p>Your medical identity card is live and accessible worldwide.</p></div>
       <div class="tabs">
-        <button class="tab active" onclick="switchTab(this,'tab-profile')">🪪 Profile</button>
-        <button class="tab" onclick="switchTab(this,'tab-qr')">📲 QR Code</button>
-        <button class="tab" onclick="switchTab(this,'tab-actions')">🚨 Emergency</button>
-        <button class="tab" onclick="switchTab(this,'tab-edit')">✏️ Edit</button>
+        <button class="tab active" onclick="switchTab(this,'tp-profile')">🪪 Profile</button>
+        <button class="tab"        onclick="switchTab(this,'tp-qr')">📲 QR Card</button>
+        <button class="tab"        onclick="switchTab(this,'tp-actions')">🚨 Emergency</button>
+        <button class="tab"        onclick="switchTab(this,'tp-edit')">✏️ Edit</button>
       </div>
 
-      <!-- TAB: Profile -->
-      <div class="tab-content active" id="tab-profile">
-        <div class="section-title">Medical Identity</div>
-        <div class="profile-grid" id="profileDisplay"></div>
+      <!-- Profile -->
+      <div class="tab-pane active" id="tp-profile">
+        <div class="sh">Medical Identity</div>
+        <div class="pgrid" id="profDisplay"></div>
       </div>
 
-      <!-- TAB: QR -->
-      <div class="tab-content" id="tab-qr">
+      <!-- QR Card -->
+      <div class="tab-pane" id="tp-qr">
         <div class="qr-panel">
-          <div style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:4px;">Your Emergency QR Code</div>
-          <p style="color:var(--muted);font-size:.82rem;">Scan to view your medical profile instantly</p>
+          <div style="font-weight:800;font-size:1rem;margin-bottom:4px">Your Emergency QR Code</div>
+          <p style="color:var(--muted);font-size:.8rem">Share or print — anyone can scan for your full medical info</p>
           <div id="qrcode"></div>
           <div class="qr-url" id="qrUrl"></div>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-            <button class="btn btn-red" onclick="downloadQR()">⬇ Download QR</button>
-            <button class="btn btn-ghost" onclick="printQR()">🖨 Print Card</button>
-            <button class="btn btn-green" onclick="copyQRLink()">🔗 Copy Link</button>
+          <div class="qr-btns">
+            <button class="btn btn-red"   onclick="dlQR()">⬇ Download QR</button>
+            <button class="btn btn-ghost" onclick="copyQR()">🔗 Copy Link</button>
+            <button class="btn btn-ghost" onclick="printCard()">🖨️ Print Card</button>
           </div>
         </div>
-        <!-- Print card preview -->
-        <div style="margin-top:20px;" class="card">
-          <div class="section-title">Emergency Card Preview</div>
-          <div id="printCardPreview" style="background:#fff;color:#111;border-radius:10px;padding:20px;font-family:var(--font-body);"></div>
+        <div style="margin-top:14px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:14px 16px;font-size:.82rem;color:var(--muted)">
+          💡 <strong style="color:#818cf8">Print Card</strong> opens a physical wallet-sized emergency card with your QR code. You can print it and keep it in your wallet or ID card holder.
         </div>
       </div>
 
-      <!-- TAB: Emergency Actions -->
-      <div class="tab-content" id="tab-actions">
-        <div style="background:linear-gradient(135deg,rgba(230,57,70,.1),rgba(180,20,30,.05));border:1px solid rgba(230,57,70,.2);border-radius:12px;padding:16px;margin-bottom:20px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span class="blink" style="display:inline-block;width:8px;height:8px;background:var(--red);border-radius:50%;"></span>
-            <strong style="color:var(--red);font-size:.85rem;">EMERGENCY ACTIONS</strong>
-          </div>
-          <p style="color:var(--muted);font-size:.8rem;">These actions will use your profile data and current GPS location.</p>
+      <!-- Emergency Actions -->
+      <div class="tab-pane" id="tp-actions">
+        <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:.82rem;color:var(--muted)">
+          <span style="color:var(--red);font-weight:700">⚡ EMERGENCY ACTIONS</span> — Live GPS location auto-attached to all messages.
         </div>
-
-        <div class="section-title">📞 Call</div>
-        <div class="action-grid">
-          <button class="action-btn call" onclick="callNumber('emergency')">
-            <div class="icon">📞</div>
-            <div class="label">Call Emergency Contact<span class="sub" id="actEmgName"></span></div>
-          </button>
-          <button class="action-btn call" onclick="callNumber('doctor')">
-            <div class="icon">🩺</div>
-            <div class="label">Call Doctor<span class="sub" id="actDocName"></span></div>
-          </button>
-          <button class="action-btn danger" onclick="callNumber('108')">
-            <div class="icon">🚑</div>
-            <div class="label">Call Ambulance<span class="sub">Dial 108 (India)</span></div>
-          </button>
+        <div class="sh">📞 Call</div>
+        <div class="agrid">
+          <button class="aBtn call" onclick="callNum('family')"><div class="ai">📞</div><div class="al">Emergency Contact<span class="as" id="aFamLbl">—</span></div></button>
+          <button class="aBtn call" onclick="callNum('doctor')"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="aDocLbl">—</span></div></button>
+          <button class="aBtn emer" onclick="callNum('108')"><div class="ai">🚑</div><div class="al">Ambulance 108<span class="as">National Emergency India</span></div></button>
         </div>
-
-        <div class="section-title">💬 Message</div>
-        <div class="action-grid">
-          <button class="action-btn wa" onclick="openWAModal()">
-            <div class="icon">📲</div>
-            <div class="label">Share via WhatsApp<span class="sub">Doctor · Family · Ambulance</span></div>
-          </button>
-          <button class="action-btn sms" onclick="openSMSModal()">
-            <div class="icon">📱</div>
-            <div class="label">Send Emergency SMS<span class="sub">With location link</span></div>
-          </button>
+        <div class="sh">💬 Message</div>
+        <div class="agrid">
+          <button class="aBtn wa"  onclick="openMod('modWA')"><div class="ai">📲</div><div class="al">WhatsApp Alert<span class="as">Doctor · Family · Ambulance</span></div></button>
+          <button class="aBtn sms" onclick="openMod('modSMS')"><div class="ai">📱</div><div class="al">Emergency SMS<span class="as">With GPS location link</span></div></button>
         </div>
-
-        <div class="section-title">📍 Location</div>
-        <div class="action-grid">
-          <button class="action-btn loc" onclick="shareLocation()">
-            <div class="icon">📍</div>
-            <div class="label">Share My Location<span class="sub">Opens Google Maps</span></div>
-          </button>
-          <button class="action-btn loc" onclick="copyLocation()">
-            <div class="icon">🗺</div>
-            <div class="label">Copy Maps Link<span class="sub">Paste anywhere</span></div>
-          </button>
+        <div class="sh">📍 Location & Card</div>
+        <div class="agrid">
+          <button class="aBtn loc"   onclick="openLoc()"><div class="ai">📍</div><div class="al">Open My Location<span class="as">Google Maps</span></div></button>
+          <button class="aBtn loc"   onclick="copyLoc()"><div class="ai">🗺</div><div class="al">Copy Location Link<span class="as">Paste anywhere</span></div></button>
+          <button class="aBtn print" onclick="printCard()"><div class="ai">🖨️</div><div class="al">Print Emergency Card<span class="as">Physical wallet card + QR</span></div></button>
         </div>
       </div>
 
-      <!-- TAB: Edit -->
-      <div class="tab-content" id="tab-edit">
+      <!-- Edit Profile -->
+      <div class="tab-pane" id="tp-edit">
         <div class="card">
-          <div class="section-title">Update Your Medical Profile</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Full Name</label>
-              <input id="editName" type="text">
-            </div>
-            <div class="form-group">
-              <label>Age</label>
-              <input id="editAge" type="number">
-            </div>
+          <div class="sh">Update Medical Profile</div>
+          <div class="frow">
+            <div class="fg"><label>Full Name</label><input id="eName"></div>
+            <div class="fg"><label>Age</label><input id="eAge" type="number"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
+          <div class="frow">
+            <div class="fg">
               <label>Blood Group</label>
-              <select id="editBlood">
-                <option value="">Select</option>
-                <option>A+</option><option>A-</option>
-                <option>B+</option><option>B-</option>
-                <option>O+</option><option>O-</option>
-                <option>AB+</option><option>AB-</option>
-              </select>
+              <select id="eBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
             </div>
-            <div class="form-group">
-              <label>Hospital</label>
-              <input id="editHospital" type="text">
-            </div>
+            <div class="fg"><label>Hospital</label><input id="eHosp"></div>
           </div>
-          <div class="form-group">
-            <label>Diseases / Conditions</label>
-            <textarea id="editDiseases" rows="2"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Allergies ⚠️</label>
-            <textarea id="editAllergies" rows="2"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Current Medicines</label>
-            <textarea id="editMedicines" rows="2"></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Emergency Contact Name</label>
-              <input id="editEmgName" type="text">
-            </div>
-            <div class="form-group">
-              <label>Emergency Phone</label>
-              <input id="editEmgPhone" type="tel">
+          <div class="fg"><label>Diseases</label><textarea id="eDis" rows="2"></textarea></div>
+          <div class="fg"><label>Allergies ⚠️</label><textarea id="eAll" rows="2"></textarea></div>
+          <div class="fg"><label>Medicines</label><textarea id="eMed" rows="2"></textarea></div>
+          <div class="frow">
+            <div class="fg"><label>Emergency Contact Name</label><input id="eEName"></div>
+            <div class="fg">
+              <label>Emergency Phone (10 digits)</label>
+              <input id="eEPhone" type="tel" maxlength="13" oninput="livePhone(this,'eEPhone_fb')">
+              <div id="eEPhone_fb" class="phone-fb"></div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Doctor Name</label>
-              <input id="editDocName" type="text">
-            </div>
-            <div class="form-group">
-              <label>Doctor Phone</label>
-              <input id="editDocPhone" type="tel">
+          <div class="frow">
+            <div class="fg"><label>Doctor Name</label><input id="eDName"></div>
+            <div class="fg">
+              <label>Doctor Phone (10 digits)</label>
+              <input id="eDPhone" type="tel" maxlength="13" oninput="livePhone(this,'eDPhone_fb')">
+              <div id="eDPhone_fb" class="phone-fb"></div>
             </div>
           </div>
-          <button class="btn btn-red" style="margin-top:8px;" onclick="saveProfile()">💾 Save Profile</button>
+          <button class="btn btn-red" id="saveBtn" onclick="saveProfile()">💾 Save to Database</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ DOCTOR DASHBOARD ══ -->
-  <div class="page" id="page-doctor">
+  <!-- ══════ DOCTOR DASHBOARD ══════ -->
+  <div class="page" id="pg-doctor">
     <nav class="topbar">
-      <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
-      </div>
-      <div class="nav-btns">
-        <span class="role-pill doctor">Doctor</span>
-        <button class="btn btn-ghost" onclick="doLogout()">Log out</button>
-      </div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-green">Doctor</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
     </nav>
-    <div class="dash fade-in">
-      <div class="dash-header">
-        <h2 id="docGreeting">Doctor Dashboard</h2>
-        <p style="color:var(--muted);">View and manage registered patients and their emergency data.</p>
-      </div>
-      <div class="stats-row" id="docStats"></div>
-      <div class="section-title">Registered Patients</div>
-      <div class="table-wrap card">
-        <table id="patientsTable">
-          <thead>
-            <tr>
-              <th>Name</th><th>Age</th><th>Blood</th>
-              <th>Conditions</th><th>Emergency Contact</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="patientsBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ HOSPITAL DASHBOARD ══ -->
-  <div class="page" id="page-hospital">
-    <nav class="topbar">
-      <div class="logo">
-        <div class="pulse">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <span><span>GED</span>IC</span>
-      </div>
-      <div class="nav-btns">
-        <span class="role-pill hospital">Hospital</span>
-        <button class="btn btn-ghost" onclick="doLogout()">Log out</button>
-      </div>
-    </nav>
-    <div class="dash fade-in">
-      <div class="dash-header">
-        <h2 id="hospGreeting">Hospital Admin Panel</h2>
-        <p style="color:var(--muted);">Complete patient registry with emergency access.</p>
-      </div>
-      <div class="stats-row" id="hospStats"></div>
-      <div class="section-title">All Registered Patients</div>
-      <div class="table-wrap card" style="margin-bottom:24px;">
+    <div class="dash">
+      <div class="dhead"><h2 id="docGreet">Doctor Dashboard</h2><p>Live patient registry from Firebase.</p></div>
+      <div class="stats" id="docStats"></div>
+      <div class="sh">Registered Patients</div>
+      <div class="tbl-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Patient</th><th>Blood</th><th>Age</th>
-              <th>Conditions</th><th>Allergies</th><th>Medicines</th><th>Doctor</th><th>QR</th>
-            </tr>
-          </thead>
-          <tbody id="hospPatientsBody"></tbody>
+          <thead><tr><th>Patient</th><th>Blood</th><th>Age</th><th>Conditions</th><th>Emergency Contact</th><th>Actions</th></tr></thead>
+          <tbody id="docTbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px"><span class="spinner"></span> Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- ══ EMERGENCY PUBLIC VIEW ══ -->
-  <div class="page" id="page-emergency">
-    <div style="background:var(--red);padding:8px;text-align:center;font-weight:700;font-size:.82rem;letter-spacing:.06em;">
-      🚨 EMERGENCY MEDICAL INFORMATION — SHOW THIS TO FIRST RESPONDERS
+  <!-- ══════ HOSPITAL DASHBOARD ══════ -->
+  <div class="page" id="pg-hospital">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-amber">Hospital</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2 id="hospGreet">Hospital Admin Panel</h2><p>Full cloud patient registry — add, edit, delete.</p></div>
+      <div class="stats" id="hospStats"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-red" onclick="openAddPat()">+ Add Patient Record</button>
+      </div>
+      <div class="sh">Patient Registry</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Blood</th><th>Age</th><th>Conditions</th><th>Allergies</th><th>Doctor</th><th>Actions</th></tr></thead>
+          <tbody id="hospTbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px"><span class="spinner"></span> Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
-    <div class="emergency-wrap fade-in">
-      <div class="emergency-header">
-        <div style="font-size:2.5rem;margin-bottom:10px;">🆘</div>
+  </div>
+
+  <!-- ══════ RESPONDER ══════ -->
+  <div class="page" id="pg-responder">
+    <nav class="topbar">
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="topbar-right"><span class="pill pill-red">Responder</span><button class="btn btn-ghost" onclick="doLogout()">Log out</button></div>
+    </nav>
+    <div class="dash">
+      <div class="dhead"><h2>First Responder Search</h2><p>Find any patient by name instantly.</p></div>
+      <div class="card" style="margin-bottom:20px"><input id="respQ" placeholder="Search patient by name…" oninput="respSearch()"></div>
+      <div id="respResults"></div>
+    </div>
+  </div>
+
+  <!-- ══════ EMERGENCY PUBLIC VIEW ══════ -->
+  <div class="page" id="pg-emergency">
+    <div class="emg-stripe">🚨 EMERGENCY MEDICAL INFORMATION — SHOW THIS TO FIRST RESPONDERS</div>
+    <div class="emg-wrap">
+      <div class="emg-banner">
+        <div style="font-size:2.2rem;margin-bottom:8px">🆘</div>
         <h2>EMERGENCY MEDICAL PROFILE</h2>
-        <p>Scanned QR Code · Instant Access</p>
+        <p>QR Scan · Instant Access · No Login Required</p>
       </div>
-
-      <div class="med-card" id="emergencyBloodCard">
-        <h3>Critical Info</h3>
-        <div class="info-row">
-          <span class="ik">👤 Patient</span>
-          <span class="iv" id="emgName">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">🩸 Blood Group</span>
-          <span class="iv"><span class="blood-badge" id="emgBlood">—</span></span>
-        </div>
-        <div class="info-row">
-          <span class="ik">🎂 Age</span>
-          <span class="iv" id="emgAge">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">🏥 Hospital</span>
-          <span class="iv" id="emgHospital">—</span>
-        </div>
+      <div class="info-card">
+        <h3>Critical Information</h3>
+        <div class="irow"><span class="ik">👤 Patient</span><span class="iv" id="eN">—</span></div>
+        <div class="irow"><span class="ik">🩸 Blood Group</span><span class="iv"><span class="blood-tag" id="eB">—</span></span></div>
+        <div class="irow"><span class="ik">🎂 Age</span><span class="iv" id="eAg">—</span></div>
+        <div class="irow"><span class="ik">🏥 Hospital</span><span class="iv" id="eH">—</span></div>
       </div>
-
-      <div class="med-card">
+      <div class="info-card">
         <h3>Medical Conditions</h3>
-        <div class="info-row">
-          <span class="ik">🫀 Conditions</span>
-          <span class="iv tag-amber" id="emgDiseases">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">⚠️ Allergies</span>
-          <span class="iv tag-red" id="emgAllergies">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">💊 Medicines</span>
-          <span class="iv" id="emgMedicines">—</span>
-        </div>
+        <div class="irow"><span class="ik">🫀 Conditions</span><span class="iv col-amber" id="eDis">—</span></div>
+        <div class="irow"><span class="ik">⚠️ Allergies</span><span class="iv col-red"   id="eAll">—</span></div>
+        <div class="irow"><span class="ik">💊 Medicines</span><span class="iv"           id="eMedE">—</span></div>
       </div>
-
-      <div class="med-card">
+      <div class="info-card">
         <h3>Emergency Contacts</h3>
-        <div class="info-row">
-          <span class="ik">👨‍👩‍👧 Family</span>
-          <span class="iv tag-green" id="emgEmgName">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">📞 Phone</span>
-          <span class="iv" id="emgEmgPhone">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">🩺 Doctor</span>
-          <span class="iv" id="emgDocName">—</span>
-        </div>
-        <div class="info-row">
-          <span class="ik">📞 Doctor Ph.</span>
-          <span class="iv" id="emgDocPhone">—</span>
-        </div>
+        <div class="irow"><span class="ik">👨‍👩‍👧 Family</span><span class="iv col-green" id="eEName">—</span></div>
+        <div class="irow"><span class="ik">📞 Phone</span><span class="iv" id="eEPhone">—</span></div>
+        <div class="irow"><span class="ik">🩺 Doctor</span><span class="iv" id="eDName">—</span></div>
+        <div class="irow"><span class="ik">📞 Dr. Phone</span><span class="iv" id="eDPhone">—</span></div>
       </div>
-
-      <!-- Emergency action buttons -->
-      <div style="display:grid;gap:10px;margin-bottom:24px;">
-        <button class="action-btn call" style="width:100%;" onclick="emgCall('family')">
-          <div class="icon">📞</div>
-          <div class="label">Call Emergency Contact<span class="sub" id="emgCallFamLabel"></span></div>
-        </button>
-        <button class="action-btn call" style="width:100%;" onclick="emgCall('doctor')">
-          <div class="icon">🩺</div>
-          <div class="label">Call Doctor<span class="sub" id="emgCallDocLabel"></span></div>
-        </button>
-        <button class="action-btn wa" style="width:100%;" onclick="emgShareWA()">
-          <div class="icon">📲</div>
-          <div class="label">Share via WhatsApp<span class="sub">Send to family or rescue team</span></div>
-        </button>
-        <button class="action-btn sms" style="width:100%;" onclick="emgSendSMS()">
-          <div class="icon">📱</div>
-          <div class="label">Send Emergency SMS<span class="sub">To doctor with location</span></div>
-        </button>
-        <button class="action-btn loc" style="width:100%;" onclick="shareLocation()">
-          <div class="icon">📍</div>
-          <div class="label">Share Location<span class="sub">Open Google Maps</span></div>
-        </button>
-        <button class="action-btn danger" style="width:100%;" onclick="callNumber('108')">
-          <div class="icon">🚑</div>
-          <div class="label">Call Ambulance 108<span class="sub">National Emergency</span></div>
-        </button>
+      <div style="display:grid;gap:10px;margin-bottom:28px">
+        <button class="aBtn call" style="width:100%" onclick="callNum('family')"><div class="ai">📞</div><div class="al">Call Emergency Contact<span class="as" id="eCallFam">—</span></div></button>
+        <button class="aBtn call" style="width:100%" onclick="callNum('doctor')"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="eCallDoc">—</span></div></button>
+        <button class="aBtn wa"   style="width:100%" onclick="openMod('modWA')"><div class="ai">📲</div><div class="al">WhatsApp Emergency Alert<span class="as">Sends with GPS location</span></div></button>
+        <button class="aBtn sms"  style="width:100%" onclick="openMod('modSMS')"><div class="ai">📱</div><div class="al">Send Emergency SMS<span class="as">To doctor + GPS link</span></div></button>
+        <button class="aBtn loc"  style="width:100%" onclick="openLoc()"><div class="ai">📍</div><div class="al">Share Location<span class="as">Google Maps</span></div></button>
+        <button class="aBtn emer" style="width:100%" onclick="callNum('108')"><div class="ai">🚑</div><div class="al">Call Ambulance 108<span class="as">National Emergency</span></div></button>
       </div>
-
-      <div style="text-align:center;color:var(--muted);font-size:.72rem;padding-bottom:40px;line-height:1.7;">
-        Powered by GEDIC · Global Emergency Digital Identity Card<br>
-        This profile is stored locally and accessed via QR code.
-      </div>
+      <p style="text-align:center;color:var(--muted);font-size:.7rem;padding-bottom:40px">Powered by GEDIC · Firebase Cloud · Free Emergency Medical System</p>
     </div>
   </div>
 
 </div><!-- #app -->
 
-<!-- ═══════════ INLINE SCRIPTS ═══════════ -->
+<!-- ── Inline bootstrap: start app after DOM ready ── -->
 <script>
-// ─── EMBEDDED MODULES ──────────────────────────────────────
-const Auth = (() => {
-  const ROLES = { PATIENT: 'patient', DOCTOR: 'doctor', HOSPITAL: 'hospital', EMERGENCY: 'emergency' };
-  const SESSION_KEY = 'gedic_session';
-  const USERS_KEY = 'gedic_users';
-  function getUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); }
-  function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
-  function register(username, password, role, profileData = {}) {
-    const users = getUsers();
-    if (users[username]) return { success: false, error: 'Username already exists' };
-    users[username] = { password: btoa(password), role, profile: profileData, createdAt: Date.now() };
-    saveUsers(users);
-    return { success: true };
-  }
-  function login(username, password) {
-    const users = getUsers();
-    const user = users[username];
-    if (!user) return { success: false, error: 'User not found' };
-    if (user.password !== btoa(password)) return { success: false, error: 'Invalid password' };
-    const session = { username, role: user.role, loginTime: Date.now() };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return { success: true, session };
-  }
-  function logout() { localStorage.removeItem(SESSION_KEY); }
-  function getSession() { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
-  function isLoggedIn() { return !!getSession(); }
-  function getCurrentUser() {
-    const s = getSession(); if (!s) return null;
-    const users = getUsers();
-    return users[s.username] ? { ...users[s.username], username: s.username } : null;
-  }
-  function updateProfile(username, profileData) {
-    const users = getUsers(); if (!users[username]) return false;
-    users[username].profile = { ...users[username].profile, ...profileData };
-    saveUsers(users); return true;
-  }
-  function getAllPatients() {
-    const users = getUsers();
-    return Object.entries(users)
-      .filter(([, u]) => u.role === ROLES.PATIENT)
-      .map(([username, u]) => ({ username, ...u.profile }));
-  }
-  function getUserByUsername(username) {
-    const users = getUsers();
-    return users[username] ? { ...users[username], username } : null;
-  }
-  function seedDemo() {
-    const users = getUsers();
-    if (Object.keys(users).length === 0) {
-      register('patient1', 'pass123', ROLES.PATIENT, {
-        name: 'Arjun Suresh Kumar', age: '34', blood: 'B+',
-        diseases: 'Type 2 Diabetes, Hypertension',
-        allergies: 'Penicillin, Sulfa drugs',
-        emergencyContact: '+919876543210', emergencyName: 'Priya Kumar (Wife)',
-        doctorPhone: '+919444455566', doctorName: 'Dr. Meena Krishnan',
-        hospital: 'Apollo Hospitals, Chennai',
-        medicines: 'Metformin 500mg, Amlodipine 5mg, Aspirin 75mg'
-      });
-      register('doctor1', 'doc123', ROLES.DOCTOR, {
-        name: 'Dr. Meena Krishnan', specialization: 'Internal Medicine',
-        hospital: 'Apollo Hospitals, Chennai', phone: '+919444455566'
-      });
-      register('hospital1', 'hosp123', ROLES.HOSPITAL, {
-        name: 'Apollo Hospitals', location: 'Chennai, Tamil Nadu', phone: '+914428293333'
-      });
-    }
-  }
-  return { ROLES, register, login, logout, getSession, isLoggedIn, getCurrentUser, updateProfile, getAllPatients, getUserByUsername, seedDemo };
-})();
-
-// ─── LOCATION ──────────────────────────────────────────────
-const Location = (() => {
-  let cached = null;
-  function get() {
-    return new Promise((res, rej) => {
-      if (cached) return res(cached);
-      if (!navigator.geolocation) return rej(new Error('Not supported'));
-      navigator.geolocation.getCurrentPosition(
-        p => { cached = { lat: p.coords.latitude, lng: p.coords.longitude }; res(cached); },
-        e => rej(e), { timeout: 8000 }
-      );
-    });
-  }
-  function mapsLink(lat, lng) { return `https://maps.google.com/?q=${lat},${lng}`; }
-  async function getLink() {
-    try { const l = await get(); return mapsLink(l.lat, l.lng); }
-    catch { return 'https://maps.google.com/'; }
-  }
-  async function open() {
-    try { const l = await get(); window.open(mapsLink(l.lat, l.lng), '_blank'); }
-    catch (e) { showToast('Location error: ' + e.message, 'error'); }
-  }
-  return { get, mapsLink, getLink, open };
-})();
-
-// ─── QR ────────────────────────────────────────────────────
-const QRGen = (() => {
-  // FIX: Embed full profile as base64 JSON in the URL — any device can read it on scan.
-  // Also keep ?view= fallback for old QR codes already printed/shared.
-  function emergencyURL(username, profileData) {
-    const base = `${location.origin}${location.pathname}`;
-    if (profileData) {
-      try {
-        const safe = {
-          username:         username,
-          name:             profileData.name             || '',
-          age:              profileData.age              || '',
-          blood:            profileData.blood            || '',
-          diseases:         profileData.diseases         || '',
-          allergies:        profileData.allergies        || '',
-          medicines:        profileData.medicines        || '',
-          hospital:         profileData.hospital         || '',
-          emergencyName:    profileData.emergencyName    || '',
-          emergencyContact: profileData.emergencyContact || '',
-          doctorName:       profileData.doctorName       || '',
-          doctorPhone:      profileData.doctorPhone      || ''
-        };
-        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(safe))));
-        return `${base}?data=${encodeURIComponent(encoded)}`;
-      } catch(e) { console.warn('QR encode failed, fallback:', e); }
-    }
-    return `${base}?view=${encodeURIComponent(username)}`;
-  }
-  function generate(containerId, url, size = 200) {
-    const el = document.getElementById(containerId); if (!el) return;
-    el.innerHTML = '';
-    try {
-      new QRCode(el, { text: url, width: size, height: size,
-        colorDark: '#0a0a0a', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H });
-    } catch(e) { el.innerHTML = `<div style="color:red;font-size:.8rem;">QR error: ${e.message}</div>`; }
-  }
-  function download(containerId, filename = 'gedic-qr.png') {
-    const el = document.getElementById(containerId); if (!el) return;
-    const img = el.querySelector('img'); if (!img) return;
-    const a = document.createElement('a');
-    a.href = img.src; a.download = filename; a.click();
-  }
-  return { emergencyURL, generate, download };
-})();
-
-// ─── WHATSAPP ──────────────────────────────────────────────
-const WA = (() => {
-  async function buildMsg(profile) {
-    const mapsLink = await Location.getLink();
-    const link = QRGen.emergencyURL(profile.username);
-    return `🚑 *EMERGENCY ALERT*
-━━━━━━━━━━━━━━━━━
-👤 Patient: ${profile.name || '—'}
-🩸 Blood Group: ${profile.blood || '—'}
-🏥 Condition: ${profile.diseases || '—'}
-⚠️ Allergies: ${profile.allergies || '—'}
-💊 Medicines: ${profile.medicines || 'N/A'}
-🩺 Doctor: ${profile.doctorName || '—'} (${profile.doctorPhone || '—'})
-🏨 Hospital: ${profile.hospital || '—'}
-📞 Emergency Contact: ${profile.emergencyName || '—'} – ${profile.emergencyContact || '—'}
-━━━━━━━━━━━━━━━━━
-🔗 Full Medical Info:
-${link}
-📍 Current Location:
-${mapsLink}
-━━━━━━━━━━━━━━━━━
-⏰ ${new Date().toLocaleString('en-IN')}`;
-  }
-  async function send(profile, target) {
-    const msg = await buildMsg(profile);
-    let phone = '';
-    if (target === 'doctor') phone = (profile.doctorPhone || '').replace(/\D/g,'');
-    else if (target === 'family') phone = (profile.emergencyContact || '').replace(/\D/g,'');
-    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
-                      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-  }
-  return { send };
-})();
-
-// ─── SMS ───────────────────────────────────────────────────
-const SMS = (() => {
-  async function buildBody(profile) {
-    const mapsLink = await Location.getLink();
-    const link = QRGen.emergencyURL(profile.username);
-    return `EMERGENCY: ${profile.name}
-Blood: ${profile.blood}
-Condition: ${profile.diseases}
-Allergies: ${profile.allergies}
-Location: ${mapsLink}
-QR Info: ${link}
-Time: ${new Date().toLocaleString('en-IN')}`;
-  }
-  async function send(profile, target) {
-    const body = await buildBody(profile);
-    let phone = '108';
-    if (target === 'doctor') phone = (profile.doctorPhone || '').replace(/\D/g,'');
-    else if (target === 'family') phone = (profile.emergencyContact || '').replace(/\D/g,'');
-    window.location.href = `sms:+${phone}?body=${encodeURIComponent(body)}`;
-  }
-  return { send };
-})();
-
-// ─── GLOBALS ───────────────────────────────────────────────
-let currentProfile = null;
-let emergencyProfile = null;
-
-// ─── INIT ──────────────────────────────────────────────────
-Auth.seedDemo();
-window.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(location.search);
-
-  // NEW: ?data= contains base64-encoded profile — works on ANY device, no localStorage needed
-  const dataParam = params.get('data');
-  if (dataParam) {
-    try {
-      const decoded = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(dataParam)))));
-      if (decoded && decoded.name) {
-        loadEmergencyViewFromData(decoded);
-        return;
-      }
-    } catch(e) {
-      console.warn('Failed to decode ?data param, trying ?view fallback', e);
-    }
-  }
-
-  // LEGACY: ?view=username — only works if that username's data is in THIS device's localStorage
-  const view = params.get('view');
-  if (view) {
-    loadEmergencyView(view);
-    return;
-  }
-
-  if (Auth.isLoggedIn()) {
-    const user = Auth.getCurrentUser();
-    if (user) routeUser(user);
-    else showPage('page-landing');
-  } else {
-    showPage('page-landing');
-  }
-});
-
-// ─── ROUTING ───────────────────────────────────────────────
-function routeUser(user) {
-  currentProfile = { ...user.profile, username: user.username, role: user.role };
-  if (user.role === Auth.ROLES.PATIENT) loadPatientDash(user);
-  else if (user.role === Auth.ROLES.DOCTOR) loadDoctorDash(user);
-  else if (user.role === Auth.ROLES.HOSPITAL) loadHospitalDash(user);
-  else showPage('page-landing');
+// livePhone: called from oninput on phone fields
+function livePhone(inp, fbId) {
+  const fb = document.getElementById(fbId);
+  if (!fb) return;
+  const val = inp.value.trim();
+  if (!val) { fb.style.display = "none"; inp.style.borderColor = ""; return; }
+  const r = Phone.validate(val);
+  fb.textContent = r.msg;
+  fb.style.display = "block";
+  fb.className = "phone-fb " + (r.ok ? "phone-ok" : "phone-err");
+  inp.style.borderColor = r.ok ? "#059669" : "#dc2626";
 }
 
-// ─── PAGE NAV ──────────────────────────────────────────────
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const p = document.getElementById(id);
-  if (p) p.classList.add('active');
-}
-
-function switchTab(btn, tabId) {
-  btn.closest('.dash').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  btn.closest('.dash').querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  const tc = document.getElementById(tabId);
-  if (tc) tc.classList.add('active');
-}
-
-// ─── TOAST ─────────────────────────────────────────────────
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (type ? ' ' + type : '') + ' show';
-  setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-// ─── MODALS ────────────────────────────────────────────────
-function openWAModal() {
-  if (!currentProfile) { showToast('No profile loaded', 'error'); return; }
-  const m = document.getElementById('waModal');
-  // Update labels in modal
-  m.querySelectorAll('small')[0].textContent = `${currentProfile.doctorName || 'Doctor'} · ${currentProfile.doctorPhone || '—'}`;
-  m.querySelectorAll('small')[1].textContent = `${currentProfile.emergencyName || 'Family'}`;
-  m.classList.add('open');
-}
-function openSMSModal() {
-  if (!currentProfile) { showToast('No profile loaded', 'error'); return; }
-  document.getElementById('smsDocPhone').textContent = currentProfile.doctorPhone || '—';
-  document.getElementById('smsFamPhone').textContent = currentProfile.emergencyContact || '—';
-  document.getElementById('smsModal').classList.add('open');
-}
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-// ─── WA HANDLER ────────────────────────────────────────────
-async function handleWA(target) {
-  const p = currentProfile || emergencyProfile;
-  if (!p) return;
-  closeModal('waModal');
-  showToast('Opening WhatsApp…');
-  await WA.send(p, target);
-}
-
-// ─── SMS HANDLER ───────────────────────────────────────────
-async function handleSMS(target) {
-  const p = currentProfile || emergencyProfile;
-  if (!p) return;
-  closeModal('smsModal');
-  showToast('Opening SMS…');
-  await SMS.send(p, target);
-}
-
-// ─── CALL ──────────────────────────────────────────────────
-function callNumber(type) {
-  const p = currentProfile || emergencyProfile;
-  if (type === '108') { window.location.href = 'tel:108'; return; }
-  if (!p) return;
-  let phone = '';
-  if (type === 'emergency') phone = (p.emergencyContact || '').replace(/\D/g,'');
-  else if (type === 'doctor') phone = (p.doctorPhone || '').replace(/\D/g,'');
-  else if (type === 'family') phone = (p.emergencyContact || '').replace(/\D/g,'');
-  if (!phone) { showToast('Phone number not found', 'error'); return; }
-  window.location.href = `tel:+${phone}`;
-}
-
-// ─── LOCATION ──────────────────────────────────────────────
-async function shareLocation() { await Location.open(); }
-async function copyLocation() {
-  const link = await Location.getLink();
-  try {
-    await navigator.clipboard.writeText(link);
-    showToast('📍 Location link copied!');
-  } catch {
-    prompt('Copy this location link:', link);
-  }
-}
-
-// ─── LOGIN ─────────────────────────────────────────────────
-function doLogin() {
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
-  const errEl = document.getElementById('loginError');
-  errEl.style.display = 'none';
-  if (!u || !p) { errEl.textContent = 'Please enter username and password.'; errEl.style.display = 'block'; return; }
-  const r = Auth.login(u, p);
-  if (!r.success) { errEl.textContent = r.error; errEl.style.display = 'block'; return; }
-  const user = Auth.getCurrentUser();
-  routeUser(user);
-}
-document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-// ─── REGISTER ──────────────────────────────────────────────
-let selectedRole = 'patient';
-function selectRegRole(el, role) {
-  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  selectedRole = role;
-  ['regPatientFields','regDoctorFields','regHospitalFields'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-  });
-  if (role === 'patient') document.getElementById('regPatientFields').style.display = 'block';
-  else if (role === 'doctor') document.getElementById('regDoctorFields').style.display = 'block';
-  else if (role === 'hospital') document.getElementById('regHospitalFields').style.display = 'block';
-}
-
-function doRegister() {
-  const username = document.getElementById('regUser').value.trim();
-  const password = document.getElementById('regPass').value;
-  const errEl = document.getElementById('regError');
-  errEl.style.display = 'none';
-  if (!username || !password) { errEl.textContent = 'Username and password required.'; errEl.style.display = 'block'; return; }
-  if (password.length < 4) { errEl.textContent = 'Password must be at least 4 characters.'; errEl.style.display = 'block'; return; }
-
-  let profile = {};
-  if (selectedRole === 'patient') {
-    profile = {
-      name: document.getElementById('regName').value.trim(),
-      age: document.getElementById('regAge').value.trim(),
-      blood: document.getElementById('regBlood').value,
-      diseases: document.getElementById('regDiseases').value.trim(),
-      allergies: document.getElementById('regAllergies').value.trim(),
-      medicines: document.getElementById('regMedicines').value.trim(),
-      emergencyName: document.getElementById('regEmgName').value.trim(),
-      emergencyContact: document.getElementById('regEmgPhone').value.trim(),
-      doctorName: document.getElementById('regDocName').value.trim(),
-      doctorPhone: document.getElementById('regDocPhone').value.trim(),
-      hospital: document.getElementById('regHospital').value.trim()
-    };
-    if (!profile.name) { errEl.textContent = 'Please enter your full name.'; errEl.style.display = 'block'; return; }
-  } else if (selectedRole === 'doctor') {
-    profile = {
-      name: document.getElementById('regDocFullName').value.trim(),
-      specialization: document.getElementById('regSpecialization').value.trim(),
-      hospital: document.getElementById('regDocHospital').value.trim(),
-      phone: document.getElementById('regDocContactPhone').value.trim()
-    };
-  } else if (selectedRole === 'hospital') {
-    profile = {
-      name: document.getElementById('regHospName').value.trim(),
-      location: document.getElementById('regHospLocation').value.trim(),
-      phone: document.getElementById('regHospPhone').value.trim()
-    };
-  }
-
-  const r = Auth.register(username, password, selectedRole, profile);
-  if (!r.success) { errEl.textContent = r.error; errEl.style.display = 'block'; return; }
-  showToast('✅ Account created! Signing in…');
-  setTimeout(() => {
-    Auth.login(username, password);
-    const user = Auth.getCurrentUser();
-    routeUser(user);
-  }, 800);
-}
-
-// ─── PATIENT DASHBOARD ─────────────────────────────────────
-function loadPatientDash(user) {
-  showPage('page-patient');
-  const p = user.profile;
-  currentProfile = { ...p, username: user.username };
-  document.getElementById('patGreeting').textContent = `Hello, ${p.name || user.username} 👋`;
-
-  // action labels
-  const emgName = document.getElementById('actEmgName');
-  const docName = document.getElementById('actDocName');
-  if (emgName) emgName.textContent = p.emergencyName || p.emergencyContact || '—';
-  if (docName) docName.textContent = p.doctorName || p.doctorPhone || '—';
-
-  // profile fields display
-  renderProfileFields(p);
-
-  // QR — FIX: Pass profile data so it's embedded in the QR URL directly.
-  // Any device that scans this QR will get all the data from the URL itself.
-  const qrUrl = QRGen.emergencyURL(user.username, p);
-  QRGen.generate('qrcode', qrUrl, 200);
-  const qrUrlEl = document.getElementById('qrUrl');
-  if (qrUrlEl) qrUrlEl.textContent = qrUrl;
-
-  // print card preview
-  renderPrintCard(p, qrUrl);
-
-  // edit form pre-fill
-  prefillEditForm(p);
-}
-
-function renderProfileFields(p) {
-  const fields = [
-    { label: '👤 Full Name', value: p.name },
-    { label: '🩸 Blood Group', value: p.blood, badge: true },
-    { label: '🎂 Age', value: p.age ? `${p.age} years` : '—' },
-    { label: '🏥 Hospital', value: p.hospital },
-    { label: '🫀 Diseases', value: p.diseases },
-    { label: '⚠️ Allergies', value: p.allergies, danger: true },
-    { label: '💊 Medicines', value: p.medicines },
-    { label: '👨‍👩‍👧 Emergency Contact', value: `${p.emergencyName || ''} ${p.emergencyContact || ''}`.trim() },
-    { label: '🩺 Doctor', value: `${p.doctorName || ''} ${p.doctorPhone || ''}`.trim() },
-  ];
-  const grid = document.getElementById('profileDisplay');
-  if (!grid) return;
-  grid.innerHTML = fields.map(f => `
-    <div class="profile-field">
-      <div class="pf-label">${f.label}</div>
-      <div class="pf-val ${f.danger ? 'tag-red' : ''}">
-        ${f.badge ? `<span class="blood-badge">${f.value || '—'}</span>` : (f.value || '<span style="color:var(--muted)">—</span>')}
+// Responder search
+async function respSearch() {
+  const q   = (document.getElementById("respQ")?.value || "").toLowerCase().trim();
+  const el  = document.getElementById("respResults");
+  if (!q) { el.innerHTML = ""; return; }
+  const pts = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
+  const res = pts.filter(p => (p.name || "").toLowerCase().includes(q));
+  if (!res.length) { el.innerHTML = `<p style="color:var(--muted);font-size:.85rem">No patients found for "${q}".</p>`; return; }
+  el.innerHTML = res.map(p => `
+    <div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:700">${p.name}</div>
+        <div style="color:var(--muted);font-size:.8rem">${p.blood||"—"} · ${p.age||"—"} yrs · ${p.hospital||"—"}</div>
+        <div style="color:#f87171;font-size:.78rem">⚠️ ${p.allergies || "No allergies recorded"}</div>
       </div>
-    </div>`).join('');
+      <button class="btn btn-red" onclick="App.loadEmergencyView('${p.uid||p.id}')">🆘 View</button>
+    </div>`).join("");
 }
 
-function renderPrintCard(p, qrUrl) {
-  const el = document.getElementById('printCardPreview');
-  if (!el) return;
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="background:#e63946;color:#fff;display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.1em;padding:2px 10px;border-radius:4px;margin-bottom:10px;">🚑 EMERGENCY MEDICAL ID</div>
-        <div style="font-size:1.1rem;font-weight:800;margin-bottom:4px;">${p.name || '—'}</div>
-        <div style="display:inline-block;background:#e63946;color:#fff;font-weight:800;padding:2px 12px;border-radius:4px;margin-bottom:8px;">${p.blood || '—'}</div>
-        <div style="font-size:.78rem;line-height:1.7;">
-          <strong>Conditions:</strong> ${p.diseases || '—'}<br>
-          <strong>Allergies:</strong> <span style="color:#e63946;">${p.allergies || '—'}</span><br>
-          <strong>Medicines:</strong> ${p.medicines || '—'}<br>
-          <strong>Doctor:</strong> ${p.doctorName || '—'} · ${p.doctorPhone || '—'}<br>
-          <strong>Emergency:</strong> ${p.emergencyName || '—'} · ${p.emergencyContact || '—'}
-        </div>
-      </div>
-      <div style="text-align:center;">
-        <div style="width:90px;height:90px;background:#f5f5f5;border:2px solid #e63946;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#666;padding:4px;">
-          QR here<br>when printed
-        </div>
-        <div style="font-size:.6rem;color:#888;margin-top:4px;">Scan for full info</div>
-      </div>
-    </div>`;
-}
+// Init modal close-on-backdrop
+document.querySelectorAll(".overlay").forEach(m =>
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); })
+);
 
-function prefillEditForm(p) {
-  const fields = {
-    editName: p.name, editAge: p.age, editBlood: p.blood,
-    editHospital: p.hospital, editDiseases: p.diseases,
-    editAllergies: p.allergies, editMedicines: p.medicines,
-    editEmgName: p.emergencyName, editEmgPhone: p.emergencyContact,
-    editDocName: p.doctorName, editDocPhone: p.doctorPhone
-  };
-  Object.entries(fields).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val || '';
-  });
-}
-
-function saveProfile() {
-  const session = Auth.getSession();
-  if (!session) return;
-  const profile = {
-    name: document.getElementById('editName').value.trim(),
-    age: document.getElementById('editAge').value.trim(),
-    blood: document.getElementById('editBlood').value,
-    hospital: document.getElementById('editHospital').value.trim(),
-    diseases: document.getElementById('editDiseases').value.trim(),
-    allergies: document.getElementById('editAllergies').value.trim(),
-    medicines: document.getElementById('editMedicines').value.trim(),
-    emergencyName: document.getElementById('editEmgName').value.trim(),
-    emergencyContact: document.getElementById('editEmgPhone').value.trim(),
-    doctorName: document.getElementById('editDocName').value.trim(),
-    doctorPhone: document.getElementById('editDocPhone').value.trim()
-  };
-  Auth.updateProfile(session.username, profile);
-  currentProfile = { ...profile, username: session.username };
-  renderProfileFields(profile);
-  // FIX: Regenerate QR with updated profile data embedded in URL
-  const qrUrl = QRGen.emergencyURL(session.username, profile);
-  QRGen.generate('qrcode', qrUrl, 200);
-  const qrUrlEl = document.getElementById('qrUrl');
-  if (qrUrlEl) qrUrlEl.textContent = qrUrl;
-  renderPrintCard(profile, qrUrl);
-  const actEmgName = document.getElementById('actEmgName');
-  const actDocName = document.getElementById('actDocName');
-  if (actEmgName) actEmgName.textContent = profile.emergencyName || profile.emergencyContact || '—';
-  if (actDocName) actDocName.textContent = profile.doctorName || profile.doctorPhone || '—';
-  showToast('✅ Profile saved!');
-}
-
-function downloadQR() {
-  const session = Auth.getSession();
-  if (!session) return;
-  QRGen.download('qrcode', `gedic-${session.username}.png`);
-  showToast('⬇ QR Code downloaded!');
-}
-
-function printQR() {
-  window.print();
-}
-
-async function copyQRLink() {
-  const session = Auth.getSession();
-  if (!session) return;
-  const url = QRGen.emergencyURL(session.username);
-  try {
-    await navigator.clipboard.writeText(url);
-    showToast('🔗 Emergency link copied!');
-  } catch {
-    prompt('Copy this link:', url);
-  }
-}
-
-// ─── DOCTOR DASHBOARD ──────────────────────────────────────
-function loadDoctorDash(user) {
-  showPage('page-doctor');
-  document.getElementById('docGreeting').textContent = `Dr. ${user.profile?.name || user.username}'s Dashboard 🩺`;
-  const patients = Auth.getAllPatients();
-  const stats = document.getElementById('docStats');
-  if (stats) {
-    stats.innerHTML = `
-      <div class="stat-card"><div class="num">${patients.length}</div><div class="lbl">Patients</div></div>
-      <div class="stat-card"><div class="num">${patients.filter(p=>p.blood).length}</div><div class="lbl">With Blood Type</div></div>
-      <div class="stat-card"><div class="num">${patients.filter(p=>p.allergies).length}</div><div class="lbl">With Allergies</div></div>
-      <div class="stat-card"><div class="num">${patients.filter(p=>p.diseases).length}</div><div class="lbl">With Conditions</div></div>`;
-  }
-  const tbody = document.getElementById('patientsBody');
-  if (!tbody) return;
-  tbody.innerHTML = patients.map(p => `
-    <tr>
-      <td><strong>${p.name || p.username}</strong></td>
-      <td>${p.age || '—'}</td>
-      <td><span class="blood-badge" style="font-size:.8rem;padding:2px 10px;">${p.blood || '—'}</span></td>
-      <td style="color:var(--amber);max-width:200px;">${p.diseases || '—'}</td>
-      <td>${p.emergencyName || '—'}<br><small style="color:var(--muted);">${p.emergencyContact || ''}</small></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="btn btn-ghost" style="padding:5px 10px;font-size:.75rem;" onclick="viewPatientEmergency('${p.username}')">👁 View</button>
-        <button class="btn btn-green" style="padding:5px 10px;font-size:.75rem;" onclick="callPatientFamily('${(p.emergencyContact||'').replace(/\D/g,'')}')">📞 Call</button>
-      </td>
-    </tr>`).join('');
-}
-
-function viewPatientEmergency(username) {
-  loadEmergencyView(username);
-}
-
-function callPatientFamily(phone) {
-  if (!phone) { showToast('No phone found', 'error'); return; }
-  window.location.href = `tel:+${phone}`;
-}
-
-// ─── HOSPITAL DASHBOARD ────────────────────────────────────
-function loadHospitalDash(user) {
-  showPage('page-hospital');
-  document.getElementById('hospGreeting').textContent = `${user.profile?.name || 'Hospital'} Admin Panel 🏥`;
-  const patients = Auth.getAllPatients();
-  const stats = document.getElementById('hospStats');
-  if (stats) {
-    const bloodGroups = {};
-    patients.forEach(p => { if (p.blood) bloodGroups[p.blood] = (bloodGroups[p.blood]||0)+1; });
-    const topBlood = Object.entries(bloodGroups).sort((a,b)=>b[1]-a[1])[0];
-    stats.innerHTML = `
-      <div class="stat-card"><div class="num">${patients.length}</div><div class="lbl">Total Patients</div></div>
-      <div class="stat-card"><div class="num">${patients.filter(p=>p.allergies).length}</div><div class="lbl">Allergy Alerts</div></div>
-      <div class="stat-card"><div class="num">${topBlood ? topBlood[0] : '—'}</div><div class="lbl">Most Common Blood</div></div>
-      <div class="stat-card"><div class="num">${patients.filter(p=>p.medicines).length}</div><div class="lbl">On Medication</div></div>`;
-  }
-  const tbody = document.getElementById('hospPatientsBody');
-  if (!tbody) return;
-  tbody.innerHTML = patients.map(p => `
-    <tr>
-      <td><strong>${p.name || p.username}</strong></td>
-      <td><span class="blood-badge" style="font-size:.8rem;padding:2px 8px;">${p.blood || '—'}</span></td>
-      <td>${p.age || '—'}</td>
-      <td style="color:var(--amber);max-width:150px;">${(p.diseases || '—').substring(0,40)}</td>
-      <td style="color:var(--red);max-width:150px;">${(p.allergies || '—').substring(0,40)}</td>
-      <td style="max-width:130px;">${(p.medicines || '—').substring(0,35)}</td>
-      <td>${p.doctorName || '—'}</td>
-      <td>
-        <button class="btn btn-red" style="padding:4px 10px;font-size:.72rem;" onclick="viewPatientEmergency('${p.username}')">🆘 View</button>
-      </td>
-    </tr>`).join('');
-}
-
-// ─── EMERGENCY VIEW ────────────────────────────────────────
-
-// FIX: New function — receives profile object decoded from ?data= URL param.
-// This is the PRIMARY path for QR scans — works on ANY device without localStorage.
-function loadEmergencyViewFromData(p) {
-  emergencyProfile = { ...p };
-  currentProfile   = emergencyProfile;
-  showPage('page-emergency');
-  populateEmergencyPage(p);
-}
-
-// LEGACY path — looks up username in THIS device's localStorage.
-// Only works when the scanner has the same browser/device as the patient.
-function loadEmergencyView(username) {
-  const userObj = Auth.getUserByUsername(username);
-  if (!userObj) {
-    showPage('page-emergency');
-    document.getElementById('emgName').textContent = 'Profile not found on this device.';
-    document.getElementById('emgBlood').textContent = '—';
-    document.getElementById('emgAge').textContent = '—';
-    document.getElementById('emgHospital').textContent = '—';
-    document.getElementById('emgDiseases').textContent = '—';
-    document.getElementById('emgAllergies').textContent = '—';
-    document.getElementById('emgMedicines').textContent = '—';
-    document.getElementById('emgEmgName').textContent = '—';
-    document.getElementById('emgEmgPhone').textContent = '—';
-    document.getElementById('emgDocName').textContent = '—';
-    document.getElementById('emgDocPhone').textContent = '—';
-    return;
-  }
-  const p = userObj.profile;
-  emergencyProfile = { ...p, username };
-  currentProfile   = emergencyProfile;
-  showPage('page-emergency');
-  populateEmergencyPage(p);
-}
-
-// Shared helper — fills all emergency page fields from a profile object.
-function populateEmergencyPage(p) {
-  document.getElementById('emgName').textContent      = p.name             || '—';
-  document.getElementById('emgBlood').textContent     = p.blood            || '—';
-  document.getElementById('emgAge').textContent       = p.age ? `${p.age} yrs` : '—';
-  document.getElementById('emgHospital').textContent  = p.hospital         || '—';
-  document.getElementById('emgDiseases').textContent  = p.diseases         || '—';
-  document.getElementById('emgAllergies').textContent = p.allergies        || '—';
-  document.getElementById('emgMedicines').textContent = p.medicines        || '—';
-  document.getElementById('emgEmgName').textContent   = p.emergencyName    || '—';
-  document.getElementById('emgEmgPhone').textContent  = p.emergencyContact || '—';
-  document.getElementById('emgDocName').textContent   = p.doctorName       || '—';
-  document.getElementById('emgDocPhone').textContent  = p.doctorPhone      || '—';
-
-  const famLabel = document.getElementById('emgCallFamLabel');
-  const docLabel = document.getElementById('emgCallDocLabel');
-  if (famLabel) famLabel.textContent = `${p.emergencyName || ''} · ${p.emergencyContact || '—'}`;
-  if (docLabel) docLabel.textContent = `${p.doctorName    || ''} · ${p.doctorPhone    || '—'}`;
-}
-
-// Emergency page actions
-function emgCall(target) { callNumber(target); }
-async function emgShareWA() {
-  if (!emergencyProfile) return;
-  showToast('Opening WhatsApp…');
-  await WA.send(emergencyProfile, 'general');
-}
-async function emgSendSMS() {
-  if (!emergencyProfile) return;
-  showToast('Opening SMS…');
-  await SMS.send(emergencyProfile, 'doctor');
-}
-
-// ─── DEMO ──────────────────────────────────────────────────
-function demoEmergencyView() {
-  loadEmergencyView('patient1');
-}
-
-// ─── LOGOUT ────────────────────────────────────────────────
-function doLogout() {
-  Auth.logout();
-  currentProfile = null;
-  emergencyProfile = null;
-  showPage('page-landing');
-  showToast('Logged out');
-}
-
-// ─── REGISTER ROLE DEFAULT ─────────────────────────────────
-selectRegRole(document.querySelector('.role-tab[data-role="patient"]'), 'patient');
+// Start the app
+document.addEventListener("DOMContentLoaded", () => App.init());
 </script>
+
 </body>
 </html>

@@ -23,11 +23,19 @@ const App = (() => {
   let user    = null;
   let role    = null;
   let profile = null;
+  let authFlowActive = false;
 
   function setUser(u, r, p) { user = u; role = r; profile = p; }
+  function beginAuthFlow() { authFlowActive = true; }
+  function endAuthFlow() { authFlowActive = false; }
+  function useDemoMode() { DEMO = true; }
+  function useFirebaseMode() { if (auth && db) DEMO = false; }
 
   // ── Page navigation ──────────────────
   function go(pageId) {
+    const currentPage = document.querySelector(".page.active")?.id;
+    if (pageId === "pg-land") UI.clearAuthForms();
+    if (pageId === "pg-login" && currentPage !== "pg-login") UI.clearLoginForm();
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     const el = document.getElementById(pageId);
     if (el) el.classList.add("active");
@@ -55,10 +63,36 @@ const App = (() => {
 
   // ── Firebase data helpers ─────────────
   async function fbLoadUserRole(uid) {
+    role = null;
+    profile = null;
     try {
       const snap = await db.collection("users").doc(uid).get();
-      if (snap.exists) { role = snap.data().role; profile = snap.data(); }
+      if (snap.exists) {
+        role = snap.data().role;
+        profile = snap.data();
+        // Automatically migrate older patient accounts to the QR-readable schema.
+        if (role === "patient") {
+          try { await fbSyncPublicProfile(uid, profile); }
+          catch (error) { console.warn("Public QR profile migration is pending:", error.message); }
+        }
+        return true;
+      }
     } catch (e) { console.error("fbLoadUserRole:", e); }
+    return false;
+  }
+
+  async function completeFirebaseLogin(fbUser) {
+    user = fbUser;
+    const loaded = await fbLoadUserRole(fbUser.uid);
+    authFlowActive = false;
+    if (!loaded) {
+      go("pg-login");
+      UI.showAlert("loginErr", "Your login is valid, but the GEDIC profile is missing or inaccessible. Check Firestore rules, or create a new account.");
+      return false;
+    }
+    UI.clearLoginForm();
+    route();
+    return true;
   }
 
   async function fbFetchPatients() {
@@ -66,6 +100,23 @@ const App = (() => {
       const snap = await db.collection("patients").orderBy("createdAt", "desc").get();
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (e) { UI.toast("Error loading patients: " + e.message, "err"); return []; }
+  }
+
+  function publicProfile(profile) {
+    const allowed = [
+      "name", "age", "blood", "hospital", "diseases", "allergies",
+      "medicines", "emergencyName", "emergencyContact", "doctorName",
+      "doctorPhone", "updatedAt"
+    ];
+    return allowed.reduce((result, key) => {
+      if (profile?.[key] !== undefined) result[key] = profile[key];
+      return result;
+    }, { role: "patient" });
+  }
+
+  async function fbSyncPublicProfile(uid, data) {
+    if (!uid || !db) throw new Error("A patient ID and Firestore connection are required.");
+    await db.collection("publicProfiles").doc(uid).set(publicProfile(data), { merge: true });
   }
 
   // ── Emergency view (public QR scan) ──
@@ -77,13 +128,20 @@ const App = (() => {
       p = DB.getPatientByUid(uid);
     } else {
       try {
-        const ud = await db.collection("users").doc(uid).get();
-        if (ud.exists && ud.data().role === "patient") p = ud.data();
+        const publicDoc = await db.collection("publicProfiles").doc(uid).get();
+        if (publicDoc.exists) p = { id: publicDoc.id, uid, ...publicDoc.data() };
+        if (!p) {
+          const patientDoc = await db.collection("patients").doc(uid).get();
+          if (patientDoc.exists) p = { id: patientDoc.id, ...patientDoc.data() };
+        }
         if (!p) {
           const sn = await db.collection("patients").where("uid","==",uid).limit(1).get();
           if (!sn.empty) p = { id: sn.docs[0].id, ...sn.docs[0].data() };
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error("Emergency profile lookup failed:", e);
+        UI.toast("Could not load this emergency profile. Check Firestore rules or connectivity.", "err");
+      }
     }
 
     Emergency.render(p, uid);
@@ -136,7 +194,7 @@ const App = (() => {
     DB.seed();
 
     // Determine if placeholder config
-    const isPlaceholder = (typeof FIREBASE_CONFIG !== "undefined") && FIREBASE_CONFIG.apiKey.includes("DEMO_REPLACE");
+    const isPlaceholder = typeof FIREBASE_CONFIG === "undefined" || FIREBASE_CONFIG.apiKey.includes("DEMO_REPLACE");
 
     if (isPlaceholder) {
       _startDemo();
@@ -155,11 +213,26 @@ const App = (() => {
       if (typeof firebase !== "undefined") {
         clearInterval(poll);
         try {
-          if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-          auth = firebase.auth();
-          db   = firebase.firestore();
+          const services = initFirebase();
+          auth = services.auth;
+          db   = services.db;
           DEMO = false;
           UI.setLoaderMsg("Checking login…");
+
+          // Restore a local demo/offline account even when Firebase itself is
+          // reachable. Real Firebase logins never write this local session.
+          const demoSession = DB.loadSession();
+          if (demoSession) {
+            DEMO = true;
+            user = demoSession.user;
+            role = demoSession.role;
+            profile = demoSession.profile;
+            UI.hideLoader();
+            const demoViewId = new URLSearchParams(location.search).get("view");
+            if (demoViewId) loadEmergencyView(demoViewId);
+            else route();
+            return;
+          }
 
           const viewId = new URLSearchParams(location.search).get("view");
           if (viewId) {
@@ -170,14 +243,20 @@ const App = (() => {
 
           // Firebase auth state listener
           auth.onAuthStateChanged(async fbUser => {
+            if (DEMO || authFlowActive) return;
             if (fbUser) {
               user = fbUser;
-              await fbLoadUserRole(fbUser.uid);
+              const loaded = await fbLoadUserRole(fbUser.uid);
               UI.hideLoader();
-              route();
+              if (loaded) route();
+              else {
+                go("pg-login");
+                UI.showAlert("loginErr", "This Firebase account does not have a GEDIC profile.");
+              }
             } else {
               UI.hideLoader();
-              go("pg-land");
+              const active = document.querySelector(".page.active")?.id;
+              if (!["pg-login", "pg-register"].includes(active)) go("pg-land");
             }
           });
 
@@ -205,8 +284,9 @@ const App = (() => {
     get user()    { return user; },
     get role()    { return role; },
     get profile() { return profile; },
-    setUser, go, switchTab, route,
-    fbFetchPatients, loadEmergencyView,
+    get firebaseAvailable() { return Boolean(auth && db); },
+    setUser, beginAuthFlow, endAuthFlow, useDemoMode, useFirebaseMode, completeFirebaseLogin, go, switchTab, route,
+    fbFetchPatients, fbSyncPublicProfile, loadEmergencyView,
     init
   };
 })();

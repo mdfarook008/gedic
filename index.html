@@ -10,6 +10,7 @@
 
 <!-- Styles -->
 <link rel="stylesheet" href="css/main.css">
+<script src="js/theme.js"></script>
 
 <!--
   QR lib: jsdelivr (not cdnjs.cloudflare.com which Edge/Safari blocks)
@@ -20,6 +21,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
 
 <!-- GEDIC modules (order matters) -->
 <script src="js/firebase-config.js"></script>
@@ -34,6 +36,7 @@
 <script src="js/patient.js"></script>
 <script src="js/doctor.js"></script>
 <script src="js/hospital.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 </head>
@@ -52,6 +55,13 @@
 
 <!-- ═══════════════ TOAST ════════════════════════ -->
 <div class="toast" id="toast"></div>
+
+<div class="theme-switcher" role="group" aria-label="Color theme">
+  <span class="theme-switcher-label">Theme</span>
+  <button type="button" data-theme-choice="light" aria-label="Use light theme" title="Light theme">☀</button>
+  <button type="button" data-theme-choice="dark" aria-label="Use dark theme" title="Dark theme">◐</button>
+  <button type="button" data-theme-choice="system" aria-label="Use system theme" title="System theme">Auto</button>
+</div>
 
 <!-- ═══════════ MODAL: WhatsApp ══════════════════ -->
 <div class="overlay" id="modWA">
@@ -222,9 +232,10 @@
           Hospital : <strong>hospital [at] gedic.app</strong> / demo1234<br>
           <small style="color:var(--ink5)">(replace [at] with @ when typing)</small>
         </div>
+        <div class="alert alert-ok" id="loginInfo"></div>
         <div class="alert alert-err" id="loginErr"></div>
-        <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"></div>
-        <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password"
+        <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="off"></div>
+        <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="off"
           onkeydown="if(event.key==='Enter') doLogin()"></div>
         <button class="btn btn-red btn-xl" id="loginBtn" onclick="doLogin()">Sign In →</button>
         <div class="divider"><span>new here?</span></div>
@@ -255,8 +266,13 @@
 
         <div class="sh">Login Credentials</div>
         <div class="frow">
-          <div class="fg"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
-          <div class="fg"><label>Password (min 6 chars)</label><input type="password" id="regPwd" placeholder="Secure password"></div>
+          <div class="fg"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com" autocomplete="off"></div>
+          <div class="fg"><label>Password (min 6 chars)</label><input type="password" id="regPwd" placeholder="Secure password" autocomplete="new-password"></div>
+        </div>
+        <div class="fg">
+          <label>Account mobile (optional · automatic SMS requires notification backend)</label>
+          <input id="regPhone" type="tel" placeholder="9876543210" maxlength="13" autocomplete="tel" oninput="livePhone(this,'regPhone_fb')">
+          <div id="regPhone_fb" class="phone-fb"></div>
         </div>
 
         <!-- Patient fields -->
@@ -507,16 +523,16 @@
       </div>
       <div class="info-card">
         <h3>Medical Conditions</h3>
-        <div class="irow"><span class="ik">🫀 Conditions</span><span class="iv col-amber" id="eDis">—</span></div>
-        <div class="irow"><span class="ik">⚠️ Allergies</span><span class="iv col-red"   id="eAll">—</span></div>
+        <div class="irow"><span class="ik">🫀 Conditions</span><span class="iv col-amber" id="emDiseases">—</span></div>
+        <div class="irow"><span class="ik">⚠️ Allergies</span><span class="iv col-red" id="emAllergies">—</span></div>
         <div class="irow"><span class="ik">💊 Medicines</span><span class="iv"           id="eMedE">—</span></div>
       </div>
       <div class="info-card">
         <h3>Emergency Contacts</h3>
-        <div class="irow"><span class="ik">👨‍👩‍👧 Family</span><span class="iv col-green" id="eEName">—</span></div>
-        <div class="irow"><span class="ik">📞 Phone</span><span class="iv" id="eEPhone">—</span></div>
-        <div class="irow"><span class="ik">🩺 Doctor</span><span class="iv" id="eDName">—</span></div>
-        <div class="irow"><span class="ik">📞 Dr. Phone</span><span class="iv" id="eDPhone">—</span></div>
+        <div class="irow"><span class="ik">👨‍👩‍👧 Family</span><span class="iv col-green" id="emFamilyName">—</span></div>
+        <div class="irow"><span class="ik">📞 Phone</span><span class="iv" id="emFamilyPhone">—</span></div>
+        <div class="irow"><span class="ik">🩺 Doctor</span><span class="iv" id="emDoctorName">—</span></div>
+        <div class="irow"><span class="ik">📞 Dr. Phone</span><span class="iv" id="emDoctorPhone">—</span></div>
       </div>
       <div style="display:grid;gap:10px;margin-bottom:28px">
         <button class="aBtn call" style="width:100%" onclick="callNum('family')"><div class="ai">📞</div><div class="al">Call Emergency Contact<span class="as" id="eCallFam">—</span></div></button>
@@ -572,7 +588,11 @@ document.querySelectorAll(".overlay").forEach(m =>
 );
 
 // Start the app
-document.addEventListener("DOMContentLoaded", () => App.init());
+document.addEventListener("DOMContentLoaded", () => {
+  Theme.init();
+  UI.initModals();
+  App.init();
+});
 </script>
 
 </body>

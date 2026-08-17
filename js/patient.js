@@ -122,6 +122,7 @@ const Patient = (() => {
       await App.db.collection("users").doc(uid).update(updates);
       const sn = await App.db.collection("patients").where("uid","==",uid).get();
       sn.forEach(d => d.ref.update(updates));
+      await App.fbSyncPublicProfile(uid, { ...App.profile, ...updates });
       App.setUser(App.user, App.role, { ...App.profile, ...updates });
       renderProfile(App.profile);
       load();

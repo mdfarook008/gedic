@@ -8,7 +8,8 @@
 const SMS = (() => {
 
   async function buildBody(p) {
-    const ml   = await Location.getLink();
+    let ml = "Location unavailable";
+    try { ml = await Location.getLink(); } catch (error) { console.warn("SMS location:", error.message); }
     const link = getEmergencyURL(p.uid || p.id || 'unknown');
     return `EMERGENCY: ${p.name||'Unknown'}\nBlood: ${p.blood||'?'}\nCondition: ${p.diseases||'?'}\nAllergies: ${p.allergies||'?'}\nDoctor: ${p.doctorName||'?'} +91${p.doctorPhone||'?'}\nLocation: ${ml}\nProfile: ${link}\nTime: ${new Date().toLocaleString('en-IN')}`;
   }

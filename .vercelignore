@@ -1,0 +1,6 @@
+apps-script/
+functions/
+scripts/
+tests/
+node_modules/
+*.log

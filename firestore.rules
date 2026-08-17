@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isStaff() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['doctor', 'hospital', 'responder'];
+    }
+
+    match /users/{uid} {
+      allow create: if isOwner(uid);
+      allow read, update, delete: if isOwner(uid);
+    }
+
+    match /patients/{patientId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isStaff()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    // Deliberately contains only emergency-safe fields. QR scans are anonymous.
+    match /publicProfiles/{uid} {
+      allow read: if true;
+      allow create, update: if isOwner(uid) || isStaff();
+      allow delete: if isOwner(uid) || isStaff();
+    }
+  }
+}

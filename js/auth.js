@@ -1,145 +1,218 @@
-/**
- * auth.js
- * ─────────────────────────────────────────
- * GEDIC — Authentication Module
- * Handles login, register, logout for both
- * Firebase and demo (localStorage) mode.
- * ─────────────────────────────────────────
- */
-
+/** Authentication and account onboarding for Firebase and local demo mode. */
 const Auth = (() => {
+  const DEMO_EMAILS = new Set([
+    "patient@gedic.app",
+    "doctor@gedic.app",
+    "hospital@gedic.app"
+  ]);
+  let role = "patient";
 
-  // ── Login ────────────────────────────
-  async function login(email, pwd) {
+  function showLoginError(message) {
+    UI.showAlert("loginErr", message);
+    UI.btnLoad("loginBtn", false);
+  }
+
+  async function loginLocal(email, password) {
+    const result = DB.login(email, password);
+    if (!result.ok) { showLoginError(result.msg); return false; }
+
+    if (App.auth?.currentUser) {
+      try { await App.auth.signOut(); } catch { /* Local demo can still continue. */ }
+    }
+    App.useDemoMode();
+    const patient = DB.getPatientByUid(result.uid);
+    const profile = patient || { role: result.role, name: result.name, email, uid: result.uid };
+    const user = { email, uid: result.uid };
+    App.setUser(user, result.role, profile);
+    DB.saveSession(user, result.role, profile);
+    UI.clearLoginForm();
+    App.route();
+    UI.toast("Signed in to the GEDIC demo.", "ok");
+    return true;
+  }
+
+  async function login(rawEmail, password) {
+    const email = rawEmail.trim().toLowerCase();
     UI.hideAlert("loginErr");
-    if (!email || !pwd) { UI.showAlert("loginErr", "Enter email and password."); return; }
+    UI.hideAlert("loginInfo");
+    if (!email || !password) { showLoginError("Enter your email and password."); return; }
     UI.btnLoad("loginBtn", true);
 
-    if (App.DEMO) {
-      const r = DB.login(email, pwd);
-      if (!r.ok) { UI.showAlert("loginErr", r.msg); UI.btnLoad("loginBtn", false); return; }
-
-      const pat = DB.getPatientByUid(r.uid);
-      App.setUser({ email, uid: r.uid }, r.role, pat || { role: r.role, name: r.name, email, uid: r.uid });
-      DB.saveSession({ email, uid: r.uid }, r.role, App.profile);
-      UI.btnLoad("loginBtn", false);
-      App.route();
+    // Published demo credentials always use the seeded local database, even
+    // when a real Firebase project is connected.
+    if (DEMO_EMAILS.has(email)) {
+      await loginLocal(email, password);
       return;
     }
 
+    if (!App.firebaseAvailable) {
+      await loginLocal(email, password);
+      return;
+    }
+
+    App.useFirebaseMode();
+    App.beginAuthFlow();
     try {
-      await App.auth.signInWithEmailAndPassword(email, pwd);
-      // onAuthStateChanged in app.js handles the rest
-    } catch (e) {
-      UI.showAlert("loginErr", UI.firebaseErr(e));
+      const credential = await App.auth.signInWithEmailAndPassword(email, password);
+      if (!credential.user.emailVerified) {
+        let resent = true;
+        try { await credential.user.sendEmailVerification(); }
+        catch (error) { resent = false; console.warn("Verification email:", error.message); }
+        await App.auth.signOut();
+        App.endAuthFlow();
+        UI.clearLoginForm();
+        if (resent) UI.showAlert("loginInfo", "Verify your email before signing in. A new verification link has been sent.");
+        else UI.showAlert("loginErr", "Your email is not verified and GEDIC could not resend the link. Try again shortly.");
+        return;
+      }
+      const completed = await App.completeFirebaseLogin(credential.user);
       UI.btnLoad("loginBtn", false);
+      if (completed) {
+        UI.toast("Welcome back to GEDIC.", "ok");
+        Notifications.send("login");
+      }
+    } catch (error) {
+      App.endAuthFlow();
+      showLoginError(UI.firebaseErr(error));
     }
   }
 
-  // ── Register ─────────────────────────
-  let _role = "patient";
-
-  function pickRole(el, role) {
-    document.querySelectorAll(".role-opt").forEach(r => r.classList.remove("sel"));
-    el.classList.add("sel");
-    _role = role;
-    ["fPatient","fDoctor","fHospital"].forEach(id => {
-      const f = document.getElementById(id);
-      if (f) f.style.display = "none";
+  function pickRole(element, nextRole) {
+    document.querySelectorAll(".role-opt").forEach(option => option.classList.remove("sel"));
+    element.classList.add("sel");
+    role = nextRole;
+    ["fPatient", "fDoctor", "fHospital"].forEach(id => {
+      const section = document.getElementById(id);
+      if (section) section.style.display = "none";
     });
-    const show = { patient:"fPatient", doctor:"fDoctor", hospital:"fHospital" }[role];
-    if (show) document.getElementById(show).style.display = "block";
+    const visibleSection = { patient: "fPatient", doctor: "fDoctor", hospital: "fHospital" }[nextRole];
+    if (visibleSection) document.getElementById(visibleSection).style.display = "block";
   }
 
-  async function register() {
-    const email = UI.val("regEmail");
-    const pwd   = UI.val("regPwd");
-    UI.hideAlert("regErr");
+  function buildProfile(email) {
+    const accountPhoneRaw = UI.val("regPhone");
+    if (accountPhoneRaw) {
+      const result = Phone.validate(accountPhoneRaw);
+      if (!result.ok) throw new Error(`Account mobile: ${result.msg}`);
+    }
 
-    if (!email || !pwd) { UI.showAlert("regErr", "Email and password are required."); return; }
-    if (pwd.length < 6) { UI.showAlert("regErr", "Password must be at least 6 characters."); return; }
+    const profile = {
+      role,
+      email,
+      accountPhone: accountPhoneRaw ? Phone.clean(accountPhoneRaw) : "",
+      createdAt: Date.now()
+    };
 
-    // Build profile object
-    let profile = { role: _role, email, createdAt: Date.now() };
-
-    if (_role === "patient") {
-      if (!UI.val("rName")) { UI.showAlert("regErr", "Please enter your full name."); return; }
-
-      const ep = UI.val("rEPhone");
-      const dp = UI.val("rDPhone");
-      if (ep) { const r = Phone.validate(ep); if (!r.ok) { UI.showAlert("regErr", "Emergency Phone: " + r.msg); return; } }
-      if (dp) { const r = Phone.validate(dp); if (!r.ok) { UI.showAlert("regErr", "Doctor Phone: "    + r.msg); return; } }
-
+    if (role === "patient") {
+      if (!UI.val("rName")) throw new Error("Please enter your full name.");
+      const emergencyPhone = UI.val("rEPhone");
+      const doctorPhone = UI.val("rDPhone");
+      if (emergencyPhone && !Phone.validate(emergencyPhone).ok) throw new Error(`Emergency phone: ${Phone.validate(emergencyPhone).msg}`);
+      if (doctorPhone && !Phone.validate(doctorPhone).ok) throw new Error(`Doctor phone: ${Phone.validate(doctorPhone).msg}`);
       Object.assign(profile, {
-        name:             UI.val("rName"),
-        age:              UI.val("rAge"),
-        blood:            UI.val("rBlood"),
-        diseases:         UI.val("rDis"),
-        allergies:        UI.val("rAll"),
-        medicines:        UI.val("rMed"),
-        emergencyName:    UI.val("rEName"),
-        emergencyContact: ep ? Phone.clean(ep) : "",
-        doctorName:       UI.val("rDName"),
-        doctorPhone:      dp ? Phone.clean(dp) : "",
-        hospital:         UI.val("rHosp"),
+        name: UI.val("rName"), age: UI.val("rAge"), blood: UI.val("rBlood"),
+        diseases: UI.val("rDis"), allergies: UI.val("rAll"), medicines: UI.val("rMed"),
+        emergencyName: UI.val("rEName"), emergencyContact: emergencyPhone ? Phone.clean(emergencyPhone) : "",
+        doctorName: UI.val("rDName"), doctorPhone: doctorPhone ? Phone.clean(doctorPhone) : "",
+        hospital: UI.val("rHosp")
       });
-
-    } else if (_role === "doctor") {
-      const dp = UI.val("rDocPhone");
-      if (dp) { const r = Phone.validate(dp); if (!r.ok) { UI.showAlert("regErr", "Phone: " + r.msg); return; } }
-      Object.assign(profile, { name: UI.val("rDocName"), specialization: UI.val("rDocSpec"), hospital: UI.val("rDocHosp"), phone: dp ? Phone.clean(dp) : "" });
-
-    } else if (_role === "hospital") {
-      const hp = UI.val("rHospPhone");
-      if (hp) { const r = Phone.validate(hp); if (!r.ok) { UI.showAlert("regErr", "Phone: " + r.msg); return; } }
-      Object.assign(profile, { name: UI.val("rHospName"), location: UI.val("rHospLoc"), phone: hp ? Phone.clean(hp) : "" });
-
+    } else if (role === "doctor") {
+      const phone = UI.val("rDocPhone");
+      if (phone && !Phone.validate(phone).ok) throw new Error(`Doctor phone: ${Phone.validate(phone).msg}`);
+      Object.assign(profile, {
+        name: UI.val("rDocName") || email.split("@")[0], specialization: UI.val("rDocSpec"),
+        hospital: UI.val("rDocHosp"), phone: phone ? Phone.clean(phone) : ""
+      });
+    } else if (role === "hospital") {
+      const phone = UI.val("rHospPhone");
+      if (phone && !Phone.validate(phone).ok) throw new Error(`Hospital phone: ${Phone.validate(phone).msg}`);
+      Object.assign(profile, {
+        name: UI.val("rHospName") || email.split("@")[0], location: UI.val("rHospLoc"),
+        phone: phone ? Phone.clean(phone) : ""
+      });
     } else {
       profile.name = email.split("@")[0];
     }
+    return profile;
+  }
 
+  async function register() {
+    const email = UI.val("regEmail").toLowerCase();
+    const password = UI.val("regPwd");
+    UI.hideAlert("regErr");
+    if (!email || !password) { UI.showAlert("regErr", "Email and password are required."); return; }
+    if (password.length < 6) { UI.showAlert("regErr", "Password must be at least 6 characters."); return; }
+
+    let profile;
+    try { profile = buildProfile(email); }
+    catch (error) { UI.showAlert("regErr", error.message); return; }
     UI.btnLoad("regBtn", true);
 
-    if (App.DEMO) {
-      const r = DB.register(email, pwd, _role, profile);
-      if (!r.ok) { UI.showAlert("regErr", r.msg); UI.btnLoad("regBtn", false); return; }
-      profile.uid = r.uid;
-      App.setUser({ email, uid: r.uid }, _role, profile);
-      DB.saveSession({ email, uid: r.uid }, _role, profile);
-      UI.btnLoad("regBtn", false);
-      UI.toast("✅ Account created!", "ok");
+    if (!App.firebaseAvailable) {
+      const result = DB.register(email, password, role, profile);
+      if (!result.ok) { UI.showAlert("regErr", result.msg); UI.btnLoad("regBtn", false); return; }
+      profile.uid = result.uid;
+      const user = { email, uid: result.uid };
+      App.useDemoMode();
+      App.setUser(user, role, profile);
+      DB.saveSession(user, role, profile);
+      UI.clearRegistrationForm();
       App.route();
+      UI.toast("Demo account created in this browser.", "ok");
       return;
     }
 
+    App.useFirebaseMode();
+    App.beginAuthFlow();
+    let createdUser = null;
     try {
-      const cred = await App.auth.createUserWithEmailAndPassword(email, pwd);
-      const uid  = cred.user.uid;
+      const credential = await App.auth.createUserWithEmailAndPassword(email, password);
+      createdUser = credential.user;
+      const uid = createdUser.uid;
       profile.uid = uid;
+
       await App.db.collection("users").doc(uid).set(profile);
-      if (_role === "patient") {
-        const ref = await App.db.collection("patients").add(profile);
-        await App.db.collection("users").doc(uid).update({ patientDocId: ref.id });
+      if (role === "patient") {
+        const patientRef = await App.db.collection("patients").add(profile);
+        await App.db.collection("users").doc(uid).update({ patientDocId: patientRef.id });
+        try { await App.fbSyncPublicProfile(uid, profile); }
+        catch (error) { console.warn("Public QR profile will sync after Firestore rules are deployed:", error.message); }
       }
-      App.setUser(cred.user, _role, profile);
-      UI.toast("✅ Account created!", "ok");
-      App.route();
-    } catch (e) {
-      UI.showAlert("regErr", UI.firebaseErr(e));
+
+      let verificationSent = true;
+      try { await createdUser.sendEmailVerification(); }
+      catch (error) { verificationSent = false; console.warn("Verification email:", error.message); }
+      await Notifications.send("signup");
+      await App.auth.signOut();
+      App.setUser(null, null, null);
+      App.endAuthFlow();
+      UI.clearRegistrationForm();
+      App.go("pg-login");
+      if (verificationSent) {
+        UI.showAlert("loginInfo", "Account created. Open the verification link sent to your email, then sign in.");
+        UI.toast("Verification email sent.", "ok");
+      } else {
+        UI.showAlert("loginErr", "Account created, but the verification email could not be sent. Try signing in to resend it.");
+      }
+    } catch (error) {
+      App.endAuthFlow();
+      // Avoid leaving an unusable Authentication account if profile setup failed.
+      if (createdUser) {
+        try { await createdUser.delete(); } catch { /* Report the original setup error. */ }
+      }
+      UI.showAlert("regErr", UI.firebaseErr(error));
       UI.btnLoad("regBtn", false);
     }
   }
 
-  // ── Logout ───────────────────────────
   async function logout() {
-    if (App.DEMO) {
-      DB.clearSession();
-    } else {
-      try { await App.auth.signOut(); } catch (e) {}
+    DB.clearSession();
+    if (App.auth?.currentUser) {
+      try { await App.auth.signOut(); } catch { /* Local state is still cleared. */ }
     }
     App.setUser(null, null, null);
     App.go("pg-land");
-    UI.toast("Logged out", "info");
+    UI.toast("Logged out securely.", "info");
   }
 
   return { login, register, logout, pickRole };

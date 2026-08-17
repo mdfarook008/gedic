@@ -1,48 +1,46 @@
-/**
- * emergency.js
- * ─────────────────────────────────────────
- * GEDIC — Emergency Public View Module
- * Renders the QR-scan emergency profile.
- * ─────────────────────────────────────────
- */
-
+/** Public, no-login emergency profile renderer. */
 const Emergency = (() => {
-  let _active = null; // currently displayed profile
+  let active = null;
 
-  function render(p, uid) {
-    if (!p) {
-      document.getElementById("eN").textContent = "Profile not found";
+  function setInEmergency(id, value) {
+    const element = document.querySelector(`#pg-emergency [id="${id}"]`);
+    if (element) element.textContent = value || "—";
+  }
+
+  function render(profile, uid) {
+    const page = document.getElementById("pg-emergency");
+    if (!profile) {
+      page?.classList.add("profile-missing");
+      setInEmergency("eN", "Emergency profile unavailable");
       return;
     }
 
-    _active = { ...p, uid };
+    page?.classList.remove("profile-missing");
+    active = { ...profile, uid: profile.uid || uid };
+    const phone = value => value ? Phone.format(value) : "—";
 
-    const fmtPh = n => n ? Phone.format(n) : "—";
+    setInEmergency("eN", profile.name);
+    setInEmergency("eB", profile.blood);
+    setInEmergency("eAg", profile.age ? `${profile.age} yrs` : "—");
+    setInEmergency("eH", profile.hospital);
+    setInEmergency("emDiseases", profile.diseases);
+    setInEmergency("emAllergies", profile.allergies || "None reported");
+    setInEmergency("eMedE", profile.medicines);
+    setInEmergency("emFamilyName", profile.emergencyName);
+    setInEmergency("emFamilyPhone", phone(profile.emergencyContact));
+    setInEmergency("emDoctorName", profile.doctorName);
+    setInEmergency("emDoctorPhone", phone(profile.doctorPhone));
+    setInEmergency("eCallFam", `${profile.emergencyName || "Emergency contact"} · ${phone(profile.emergencyContact)}`);
+    setInEmergency("eCallDoc", `${profile.doctorName || "Doctor"} · ${phone(profile.doctorPhone)}`);
 
-    UI.setText("eN",      p.name);
-    UI.setText("eB",      p.blood || "—");
-    UI.setText("eAg",     p.age   ? p.age + " yrs" : "—");
-    UI.setText("eH",      p.hospital);
-    UI.setText("eDis",    p.diseases);
-    UI.setText("eAll",    p.allergies);
-    UI.setText("eMedE",   p.medicines);
-    UI.setText("eEName",  p.emergencyName);
-    UI.setText("eEPhone", fmtPh(p.emergencyContact));
-    UI.setText("eDName",  p.doctorName);
-    UI.setText("eDPhone", fmtPh(p.doctorPhone));
-    UI.setText("eCallFam",`${p.emergencyName||""} · ${fmtPh(p.emergencyContact)}`);
-    UI.setText("eCallDoc",`${p.doctorName||""} · ${fmtPh(p.doctorPhone)}`);
-
-    // WA / SMS modal labels
-    const wd = document.getElementById("waDocLbl");
-    const wf = document.getElementById("waFamLbl");
-    const sd = document.getElementById("smsDocLbl");
-    const sf = document.getElementById("smsFamLbl");
-    if (wd) wd.textContent = `${p.doctorName||"Doctor"} · ${fmtPh(p.doctorPhone)}`;
-    if (wf) wf.textContent = p.emergencyName || "—";
-    if (sd) sd.textContent = fmtPh(p.doctorPhone);
-    if (sf) sf.textContent = fmtPh(p.emergencyContact);
+    const labels = {
+      waDocLbl: `${profile.doctorName || "Doctor"} · ${phone(profile.doctorPhone)}`,
+      waFamLbl: profile.emergencyName || "Emergency contact",
+      smsDocLbl: phone(profile.doctorPhone),
+      smsFamLbl: phone(profile.emergencyContact)
+    };
+    Object.entries(labels).forEach(([id, text]) => UI.setText(id, text));
   }
 
-  return { render, get _active() { return _active; } };
+  return { render, get _active() { return active; } };
 })();

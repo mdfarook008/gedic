@@ -101,10 +101,14 @@ const Hospital = (() => {
     try {
       if (_editId) {
         await App.db.collection("patients").doc(_editId).update(data);
+        const current = (await App.db.collection("patients").doc(_editId).get()).data() || {};
+        await App.fbSyncPublicProfile(current.uid || _editId, { ...current, ...data });
         UI.toast("✅ Patient updated!", "ok");
       } else {
         data.createdAt = Date.now(); data.role = "patient";
-        await App.db.collection("patients").add(data);
+        const ref = await App.db.collection("patients").add(data);
+        await ref.update({ uid: ref.id });
+        await App.fbSyncPublicProfile(ref.id, { ...data, uid: ref.id });
         UI.toast("✅ Patient added!", "ok");
       }
       UI.closeModal("modPat"); load();
@@ -125,7 +129,14 @@ const Hospital = (() => {
     if (!_delId) return;
     UI.closeModal("modConfirm");
     if (App.DEMO) { DB.deletePatient(_delId); UI.toast("🗑 Deleted.", "info"); load(); return; }
-    try { await App.db.collection("patients").doc(_delId).delete(); UI.toast("🗑 Deleted.", "info"); load(); }
+    try {
+      const snap = await App.db.collection("patients").doc(_delId).get();
+      const publicId = snap.data()?.uid || _delId;
+      await App.db.collection("patients").doc(_delId).delete();
+      await App.db.collection("publicProfiles").doc(publicId).delete();
+      UI.toast("Patient deleted.", "info");
+      load();
+    }
     catch(e) { UI.toast("Error: "+e.message, "err"); }
   }
 

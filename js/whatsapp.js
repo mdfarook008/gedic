@@ -8,7 +8,8 @@
 const WA = (() => {
 
   async function buildMsg(p) {
-    const ml   = await Location.getLink();
+    let ml = "Location unavailable";
+    try { ml = await Location.getLink(); } catch (error) { console.warn("WhatsApp location:", error.message); }
     const link = getEmergencyURL(p.uid || p.id || 'unknown');
     const ph   = n => n ? '+91 ' + n : '—';
     return `🚑 *EMERGENCY ALERT*\n━━━━━━━━━━━━━━━━━\n👤 Patient: ${p.name||'—'}\n🩸 Blood Group: ${p.blood||'—'}\n🏥 Condition: ${p.diseases||'—'}\n⚠️ Allergies: ${p.allergies||'—'}\n💊 Medicines: ${p.medicines||'N/A'}\n🩺 Doctor: ${p.doctorName||'—'} (${ph(p.doctorPhone)})\n🏨 Hospital: ${p.hospital||'—'}\n📞 Emergency: ${p.emergencyName||'—'} – ${ph(p.emergencyContact)}\n━━━━━━━━━━━━━━━━━\n🔗 Full Profile: ${link}\n📍 Location: ${ml}\n━━━━━━━━━━━━━━━━━\n⏰ ${new Date().toLocaleString('en-IN')}`;

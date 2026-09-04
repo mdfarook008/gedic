@@ -16,13 +16,24 @@ const SMS = (() => {
   }
 
   async function send(p, target) {
-    const body  = await buildBody(p);
-    let   phone = '108';
-    if (target === 'doctor')    phone = p.doctorPhone || '108';
-    if (target === 'family')    phone = p.emergencyContact || '108';
-    if (target === 'ambulance') phone = '108';
-    if (phone.length === 10)    phone = '91' + phone;
-    window.location.href = `sms:+${phone}?body=${encodeURIComponent(body)}`;
+    // Reserve a browsing context before GPS resolves so the operating system
+    // still accepts the external SMS-protocol navigation.
+    const shareWindow = window.open('about:blank', '_blank');
+    try {
+      const body = await buildBody(p);
+      let phone = '108';
+      if (target === 'doctor') phone = p.doctorPhone || '108';
+      if (target === 'family') phone = p.emergencyContact || '108';
+      phone = String(phone).replace(/\D/g, '');
+      if (phone.length === 10) phone = '91' + phone;
+      const url = `sms:+${phone}?body=${encodeURIComponent(body)}`;
+      if (shareWindow) shareWindow.location.replace(url);
+      else window.location.href = url;
+      return url;
+    } catch (error) {
+      shareWindow?.close();
+      throw error;
+    }
   }
 
   return { send };

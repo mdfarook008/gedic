@@ -18,7 +18,14 @@ const Location = (() => {
       1: "Location permission was denied. Allow precise location for this site.",
       2: "An accurate location is currently unavailable. Turn on GPS and retry.",
       3: "Location capture timed out. Move near a window or outdoors and retry."
-    })[error?.code] || "GEDIC could not capture the current location.";
+    })[error?.code] || error?.message || "GEDIC could not capture the current location.";
+  }
+
+  async function permissionState() {
+    try {
+      if (!navigator.permissions?.query) return "unknown";
+      return (await navigator.permissions.query({ name: "geolocation" })).state;
+    } catch { return "unknown"; }
   }
 
   function get() {
@@ -71,6 +78,20 @@ const Location = (() => {
     return mapsUrl(location.lat, location.lng);
   }
 
+  function legacyCopy(text) {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    let copied = false;
+    try { copied = document.execCommand?.("copy") === true; }
+    finally { field.remove(); }
+    return copied;
+  }
+
   async function open() {
     // Open synchronously so popup blockers do not discard the map while GPS is resolving.
     const mapWindow = window.open("about:blank", "_blank");
@@ -84,7 +105,9 @@ const Location = (() => {
       UI.toast(`Current location pinned${accuracy}.`, "ok");
     } catch (error) {
       mapWindow?.close();
-      UI.toast(error.message, "err");
+      const state = await permissionState();
+      const help = state === "denied" ? " Open the browser site settings, allow Location, then retry." : "";
+      UI.toast(errorMessage(error) + help, "err");
     }
   }
 
@@ -93,13 +116,28 @@ const Location = (() => {
       UI.toast("Capturing fresh GPS coordinates…", "info");
       const location = await get();
       const link = mapsUrl(location.lat, location.lng);
-      await navigator.clipboard.writeText(link);
+      let copied = false;
+      try {
+        if (window.isSecureContext && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(link);
+          copied = true;
+        }
+      } catch { /* Fall back for browsers that expire click permission while GPS resolves. */ }
+      if (!copied) copied = legacyCopy(link);
+      if (!copied) {
+        window.prompt("Copy this current-location link:", link);
+        UI.toast("Clipboard access was blocked. Copy the map link from the dialog.", "info");
+        return link;
+      }
       const accuracy = location.accuracy ? ` Accuracy approximately ±${location.accuracy} m.` : "";
       UI.toast(`Exact map link copied.${accuracy}`, "ok");
+      return link;
     } catch (error) {
-      UI.toast(error.message, "err");
+      const state = await permissionState();
+      const help = state === "denied" ? " Open the browser site settings, allow Location, then retry." : "";
+      UI.toast(errorMessage(error) + help, "err");
     }
   }
 
-  return { get, getLink, mapsUrl, open, copy, get latest() { return latest; } };
+  return { get, getLink, mapsUrl, open, copy, permissionState, get latest() { return latest; } };
 })();

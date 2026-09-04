@@ -156,7 +156,13 @@ const Patient = (() => {
       renderProfile(App.profile);
       load();
       UI.toast("✅ Saved to Firebase!", "ok");
-    } catch (e) { UI.toast("Save error: " + e.message, "err"); }
+    } catch (e) {
+      prefillEdit(App.profile);
+      const message = e?.code === "permission-denied"
+        ? "Firebase rejected the update. The administrator must deploy the current Firestore rules and indexes."
+        : "Save error: " + e.message;
+      UI.toast(message, "err");
+    }
 
     UI.btnLoad("saveBtn", false);
   }

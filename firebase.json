@@ -1,0 +1,22 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "firebase.blaze.json", "firestore.rules", "firestore.indexes.json", "vercel.json", ".vercelignore", ".git/**", ".gitignore", "README.md", "SECURITY-ARCHITECTURE.md", "docs/**", "package.json", "package-lock.json", "apps-script/**", "functions/**", "scripts/**", "tests/**", "node_modules/**", "*-debug.log"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }],
+    "headers": [{
+      "source": "**",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com https://www.google.com/recaptcha/ https://www.recaptcha.net; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://script.google.com https://script.googleusercontent.com https://www.google.com https://www.recaptcha.net; frame-src https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" }
+      ]
+    }]
+  }
+}

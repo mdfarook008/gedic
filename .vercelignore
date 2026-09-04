@@ -1,0 +1,17 @@
+.git
+.gitignore
+.firebase
+apps-script
+docs
+functions
+scripts
+tests
+node_modules
+firebase.json
+firebase.blaze.json
+firestore.rules
+firestore.indexes.json
+README.md
+SECURITY-ARCHITECTURE.md
+package-lock.json
+*-debug.log

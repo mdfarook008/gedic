@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function userAfter() {
+      return getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function activeStaff(role) {
+      return signedIn()
+        && userDoc().role == role
+        && userDoc().staffStatus == 'active'
+        && userDoc().organisationId is string
+        && userDoc().organisationId.size() > 3;
+    }
+    function sameOrganisation(data) {
+      return data.organisationId is string
+        && data.organisationId == userDoc().organisationId;
+    }
+    function assignedDoctor(data) {
+      return data.careTeamUids is list && request.auth.uid in data.careTeamUids;
+    }
+    function authzFieldsUnchanged() {
+      return request.resource.data.get('uid', null) == resource.data.get('uid', null)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.get('staffStatus', null) == resource.data.get('staffStatus', null)
+        && request.resource.data.get('organisationId', null) == resource.data.get('organisationId', null);
+    }
+    function patientSecurityFieldsUnchanged() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.get('organisationId', null) == resource.data.get('organisationId', null)
+        && request.resource.data.get('careTeamUids', []) == resource.data.get('careTeamUids', []);
+    }
+    function onlyMedicalFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name', 'dateOfBirth', 'age', 'blood', 'hospital', 'diseases',
+        'allergies', 'medicines', 'emergencyName', 'emergencyContact',
+        'doctorName', 'doctorPhone', 'updatedAt', 'dataStatus',
+        'emergencyEnabled', 'emergencyToken'
+      ]);
+    }
+    function onlyClinicalFieldsChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name', 'dateOfBirth', 'age', 'blood', 'hospital', 'diseases',
+        'allergies', 'medicines', 'emergencyName', 'emergencyContact',
+        'doctorName', 'doctorPhone', 'updatedAt', 'dataStatus'
+      ]);
+    }
+
+    match /users/{uid} {
+      // Public registration creates patients only. Trusted staff accounts are
+      // provisioned by an administrator with the Admin SDK.
+      allow create: if isOwner(uid)
+        && request.resource.data.role == 'patient'
+        && !request.resource.data.keys().hasAny(['staffStatus', 'organisationId']);
+      allow read, delete: if isOwner(uid);
+      allow update: if isOwner(uid) && authzFieldsUnchanged();
+    }
+
+    match /patients/{patientId} {
+      allow get: if isOwner(resource.data.uid)
+        || (activeStaff('hospital') && sameOrganisation(resource.data))
+        || (activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data));
+      allow list: if signedIn()
+        && (isOwner(resource.data.uid)
+          || (activeStaff('hospital') && sameOrganisation(resource.data))
+          || (activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data)));
+      allow create: if isOwner(request.resource.data.uid)
+        && patientId == request.auth.uid
+        && request.resource.data.get('organisationId', null) == null
+        && request.resource.data.get('careTeamUids', []).size() == 0;
+      allow update: if patientSecurityFieldsUnchanged()
+        && ((isOwner(resource.data.uid) && onlyMedicalFieldsChanged())
+          || (onlyClinicalFieldsChanged()
+            && ((activeStaff('hospital') && sameOrganisation(resource.data))
+              || (activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data)))));
+      allow delete: if isOwner(resource.data.uid);
+    }
+
+    match /publicProfiles/{token} {
+      // QR tokens are random and revocable. Only direct document lookup is
+      // public; anonymous collection enumeration is denied.
+      allow get: if resource.data.enabled == true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && userAfter().emergencyToken == token
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'enabled', 'name', 'dateOfBirth', 'age', 'blood',
+          'hospital', 'diseases', 'allergies', 'medicines', 'emergencyName',
+          'emergencyContact', 'doctorName', 'doctorPhone', 'updatedAt', 'dataStatus'
+        ]);
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && userAfter().emergencyToken == token
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'enabled', 'name', 'dateOfBirth', 'age', 'blood',
+          'hospital', 'diseases', 'allergies', 'medicines', 'emergencyName',
+          'emergencyContact', 'doctorName', 'doctorPhone', 'updatedAt', 'dataStatus'
+        ]);
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Trusted backend-only collections. They remain unreachable on Spark.
+    match /emergencyChallenges/{id} { allow read, write: if false; }
+    match /emergencyAccessLogs/{id} { allow read, write: if false; }
+    match /emergencyRateLimits/{id} { allow read, write: if false; }
+    match /notificationEvents/{id} { allow read, write: if false; }
+  }
+}

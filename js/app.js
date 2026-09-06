@@ -194,8 +194,12 @@ const App = (() => {
         const publicDoc = await db.collection("publicProfiles").doc(uid).get();
         if (publicDoc.exists) p = { id: publicDoc.id, uid, ...publicDoc.data() };
       } catch (e) {
-        console.error("Emergency profile lookup failed:", e);
-        UI.toast("Could not load this emergency profile. Check Firestore rules or connectivity.", "err");
+        if (e?.code === "permission-denied" || e?.code === "not-found") {
+          console.info("Emergency profile was invalid, disabled, or revoked.");
+        } else {
+          console.error("Emergency profile lookup failed:", e);
+          UI.toast("Emergency profile service is temporarily unavailable. You can still call 108 or share your location.", "err");
+        }
       }
     }
 

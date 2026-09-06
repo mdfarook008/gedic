@@ -29,7 +29,10 @@ test('QR generation is self-hosted and the landing demo does not query productio
 });
 
 test('a failed emergency lookup clears stale patient state and disables disclosure actions', () => {
+  const app = read('js/app.js');
   const emergency = read('js/emergency.js');
+  assert.match(app, /e\?\.code === "permission-denied"/);
+  assert.doesNotMatch(app, /Check Firestore rules or connectivity/);
   assert.match(emergency, /if \(!profile\) \{\s*active = null;/);
   assert.match(emergency, /No patient data was released/);
   assert.match(emergency, /setProfileActionsEnabled\(false\)/);

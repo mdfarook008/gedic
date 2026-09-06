@@ -412,5 +412,8 @@ function getBaseURL() {
 }
 
 function getEmergencyURL(uid) {
-  return getBaseURL() + 'index.html?view=' + encodeURIComponent(uid);
+  const query = new URLSearchParams({ view: uid });
+  const isPublishedDemo = App.DEMO && !["localhost", "127.0.0.1"].includes(location.hostname);
+  if (isPublishedDemo) query.set("demo", "1");
+  return getBaseURL() + 'index.html?' + query.toString();
 }

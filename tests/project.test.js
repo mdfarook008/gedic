@@ -50,7 +50,8 @@ test('Firebase config name is consistent and QR uses random, revocable public to
 
 test('QR links contain only a patient key, not medical details', () => {
   const app = read('js/app.js');
-  assert.match(app, /encodeURIComponent\(uid\)/);
+  assert.match(app, /new URLSearchParams\(\{ view: uid \}\)/);
+  assert.match(app, /isPublishedDemo/);
   assert.doesNotMatch(app, /getEmergencyURL\([^)]*(blood|allergies|medicines)/);
 });
 

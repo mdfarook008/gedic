@@ -6,29 +6,37 @@ const vm = require('node:vm');
 
 function createLocation(reading, clipboard = { writeText: async () => {} }) {
   let legacyCopied = false;
+  const clipboardWrites = [];
+  const navigations = [];
+  const wrappedClipboard = {
+    writeText: async value => {
+      clipboardWrites.push(value);
+      return clipboard.writeText(value);
+    }
+  };
   const context = vm.createContext({
     console, setTimeout, clearTimeout,
     navigator: {
       geolocation: {
         watchPosition: success => {
-          setTimeout(() => success({ coords: reading }), 0);
+          setTimeout(() => success({ coords: reading, timestamp: reading.timestamp }), 0);
           return 7;
         },
         clearWatch() {}
       },
-      clipboard
+      clipboard: wrappedClipboard
     },
     document: {
       body: { appendChild() {} },
       createElement: () => ({ value: '', style: {}, setAttribute() {}, select() {}, remove() {} }),
       execCommand: command => { legacyCopied = command === 'copy'; return legacyCopied; }
     },
-    window: { open: () => null, location: {}, isSecureContext: true, prompt() {} },
+    window: { location: { assign: url => navigations.push(url) }, isSecureContext: true, prompt() {} },
     UI: { toast() {} },
     prompt() {}
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'location.js'), 'utf8'), context);
-  return { evaluate: expression => vm.runInContext(expression, context), legacyCopied: () => legacyCopied };
+  return { evaluate: expression => vm.runInContext(expression, context), legacyCopied: () => legacyCopied, clipboardWrites, navigations };
 }
 
 test('captures a fresh high-accuracy GPS reading', async () => {
@@ -55,4 +63,18 @@ test('copies a location with a legacy fallback when async clipboard permission e
   const link = await app.evaluate('Location.copy()');
   assert.equal(link, 'https://www.google.com/maps/search/?api=1&query=13.082680,80.270718');
   assert.equal(app.legacyCopied(), true);
+});
+
+test('copies only the Google Maps URL, not the human-readable GPS status', async () => {
+  const app = createLocation({ latitude: 8.752358, longitude: 77.798475, accuracy: 32 });
+  const link = await app.evaluate('Location.copy()');
+  assert.equal(link, 'https://www.google.com/maps/search/?api=1&query=8.752358,77.798475');
+  assert.deepEqual(app.clipboardWrites, [link]);
+});
+
+test('opens Google Maps in the current tab instead of leaving a blank popup', async () => {
+  const app = createLocation({ latitude: 8.752358, longitude: 77.798475, accuracy: 32 });
+  const link = await app.evaluate('Location.open()');
+  assert.equal(link, 'https://www.google.com/maps/search/?api=1&query=8.752358,77.798475');
+  assert.deepEqual(app.navigations, [link]);
 });

@@ -25,6 +25,7 @@ const Patient = (() => {
     renderProfile(p);
     renderQR(p);
     prefillEdit(p);
+    Location.refreshStatus();
   }
 
   function renderProfile(p) {

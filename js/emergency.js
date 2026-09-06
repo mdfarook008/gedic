@@ -79,6 +79,7 @@ const Emergency = (() => {
     setInEmergency("eAccessTrust", access.mode === "biometric"
       ? `Responder authenticated · audit ${access.auditId || "recorded"}`
       : clinical ? "Organisation-scoped staff access" : demo ? "Sample data only · no real patient record" : "Public minimum-data view");
+    Location.refreshStatus();
   }
 
   return { render, get _active() { return active; } };

@@ -172,6 +172,10 @@ test('location uses fresh high-accuracy readings and precise Maps coordinates', 
   assert.match(location, /maximumAge: 0/);
   assert.match(location, /watchPosition/);
   assert.match(location, /maps\/search\/\?api=1&query=/);
+  assert.match(location, /data-location-status/);
+  assert.match(location, /ACCEPTABLE_ACCURACY_METRES/);
+  assert.match(location, /toFixed\(6\)/);
+  assert.match(location, /Location blocked/);
 });
 
 test('cardless biometric access uses a protected backend contract', () => {

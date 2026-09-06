@@ -337,7 +337,7 @@ Twilio trial accounts may send only to recipient numbers verified in Twilio. Gma
 
 ## Precise location sharing
 
-GEDIC requests a new high-accuracy GPS reading whenever a map link is opened or copied. It samples readings for up to 12 seconds, selects the reading with the smallest reported accuracy radius, and opens this form of Google Maps URL:
+GEDIC requests a new high-accuracy GPS reading whenever a map link is opened, copied, or attached to an emergency message. It samples readings for up to 10 seconds, returns quickly when the device provides a reliable fix, selects the smallest reported accuracy radius, and opens this form of Google Maps URL:
 
 ```text
 https://www.google.com/maps/search/?api=1&query=<latitude>,<longitude>
@@ -350,7 +350,9 @@ For the best result:
 3. Grant GEDIC location permission and choose **Precise location** when the operating system offers that choice.
 4. Test outdoors or near a window if the reported accuracy is poor.
 
-The app displays the browser/device accuracy estimate, such as `approximately ±15 m`. No website can guarantee an exact physical address: GPS accuracy depends on the handset, satellite visibility, operating-system privacy settings, and whether the browser falls back to Wi-Fi or network positioning. GEDIC shares the coordinate pin rather than guessing an address through a third-party geocoder.
+The persistent GPS status displays permission guidance, six-decimal coordinates, the browser/device accuracy estimate, and capture time. An accuracy radius above `±100 m` is labelled low accuracy. No website can guarantee an exact physical address: GPS accuracy depends on the handset, satellite visibility, operating-system privacy settings, and whether the browser falls back to Wi-Fi or network positioning. GEDIC shares the coordinate pin rather than guessing an address through a third-party geocoder.
+
+**Open My Location** navigates the current tab to Google Maps after capture, avoiding blank popup tabs; use the browser Back button to return to GEDIC. **Copy Location Link** copies only the `https://www.google.com/maps/...` URL. GEDIC rejects a browser position older than 30 seconds and waits for a fresh reading.
 
 ## Verify a real QR code
 

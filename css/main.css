@@ -255,6 +255,12 @@ tbody tr:hover { background: rgba(226,247,246,.5); }
 .iv { text-align: right; font-size: .85rem; font-weight: 800; }
 .profile-missing .info-card:not(:first-of-type) { display: none; }
 
+.location-status { padding:11px 13px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--muted); font-size:.78rem; line-height:1.45; }
+.location-working { border-color:#2563eb; color:#2563eb; }
+.location-success { border-color:#059669; color:#059669; }
+.location-warning { border-color:#d97706; color:#d97706; }
+.location-error { border-color:#dc2626; color:#dc2626; }
+
 /* Modals, messages */
 .overlay { position: fixed; inset: 0; z-index: 1000; display: none; place-items: center; padding: 20px; background: rgba(5,32,45,.5); backdrop-filter: blur(9px); }
 .overlay.open { display: grid; }

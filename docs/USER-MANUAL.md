@@ -203,9 +203,12 @@ The patient probably disabled sharing or rotated the token. Use the newest card 
 - Use HTTPS or localhost.
 - Enable device location services.
 - Grant precise location permission to the official GEDIC site.
+- Read the persistent GPS status shown above the location buttons. It reports permission, capture progress, coordinates, accuracy radius, and capture time.
+- If it says **Location blocked**, open the browser's site settings for GEDIC, change Location to **Allow**, and reload the page.
+- If it times out, move near a window or outdoors and retry. Indoors, laptops and desktops may provide only Wi-Fi-based positioning.
+- Treat an accuracy value above `±100 m` as a low-accuracy estimate and confirm the pin before sharing it.
 - GEDIC does not silently substitute an estimated address.
 
 ### Biometric button is disabled
 
 That is expected in the free production build. The button becomes a simulation only in explicit local demo mode. Real biometric identification requires the external infrastructure described in `SECURITY-ARCHITECTURE.md`.
-

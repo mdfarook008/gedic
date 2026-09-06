@@ -1,16 +1,43 @@
 /** Fresh high-accuracy GPS capture and precise Google Maps links. */
 const Location = (() => {
-  const TARGET_ACCURACY_METRES = 25;
-  const CAPTURE_TIMEOUT_MS = 12000;
+  const TARGET_ACCURACY_METRES = 30;
+  const ACCEPTABLE_ACCURACY_METRES = 100;
+  const CAPTURE_TIMEOUT_MS = 10000;
+  const SETTLE_AFTER_MS = 2500;
+  const MAX_READING_AGE_MS = 30000;
   let latest = null;
 
+  function report(message, state = "info") {
+    if (typeof document === "undefined" || typeof document.querySelectorAll !== "function") return;
+    document.querySelectorAll("[data-location-status]").forEach(element => {
+      element.textContent = message;
+      element.className = `location-status location-${state}`;
+      element.setAttribute("role", state === "error" ? "alert" : "status");
+    });
+  }
+
+  function describe(location) {
+    const accuracy = location.accuracy > 0 ? `±${location.accuracy} m` : "accuracy unavailable";
+    const quality = location.accuracy > ACCEPTABLE_ACCURACY_METRES ? "Low accuracy" : "GPS ready";
+    return `${quality}: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)} (${accuracy}) · ${new Date(location.capturedAt).toLocaleTimeString("en-IN")}`;
+  }
+
   function normalize(position) {
+    const receivedAt = Date.now();
+    const sourceAt = Number(position.timestamp) || receivedAt;
     return {
       lat: Number(position.coords.latitude),
       lng: Number(position.coords.longitude),
       accuracy: Math.round(Number(position.coords.accuracy) || 0),
-      capturedAt: Date.now()
+      capturedAt: sourceAt,
+      ageMs: Math.max(0, receivedAt - sourceAt)
     };
+  }
+
+  function validReading(reading) {
+    return Number.isFinite(reading.lat) && reading.lat >= -90 && reading.lat <= 90
+      && Number.isFinite(reading.lng) && reading.lng >= -180 && reading.lng <= 180
+      && reading.ageMs <= MAX_READING_AGE_MS;
   }
 
   function errorMessage(error) {
@@ -31,20 +58,30 @@ const Location = (() => {
   function get() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
+        report("Location is not supported by this browser.", "error");
         reject(new Error("This browser does not support geolocation."));
         return;
       }
 
+      report("Requesting precise location permission…", "working");
       let best = null;
       let settled = false;
       let watchId;
+      let settleTimer;
       const finish = (result, error) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        clearTimeout(settleTimer);
         if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
-        if (result) { latest = result; resolve(result); }
-        else reject(error);
+        if (result) {
+          latest = result;
+          report(describe(result), result.accuracy > ACCEPTABLE_ACCURACY_METRES ? "warning" : "success");
+          resolve(result);
+        } else {
+          report(errorMessage(error), "error");
+          reject(error);
+        }
       };
 
       const timer = setTimeout(() => {
@@ -54,8 +91,18 @@ const Location = (() => {
 
       watchId = navigator.geolocation.watchPosition(position => {
         const reading = normalize(position);
+        if (!validReading(reading)) {
+          report("The device returned an invalid or stale position. Waiting for a fresh GPS reading…", "warning");
+          return;
+        }
         if (!best || reading.accuracy < best.accuracy) best = reading;
+        report(`GPS found ${reading.lat.toFixed(6)}, ${reading.lng.toFixed(6)} (±${reading.accuracy || "?"} m). Improving accuracy…`, "working");
         if (reading.accuracy > 0 && reading.accuracy <= TARGET_ACCURACY_METRES) finish(reading);
+        else if (!settleTimer) {
+          settleTimer = setTimeout(() => {
+            if (best?.accuracy > 0 && best.accuracy <= ACCEPTABLE_ACCURACY_METRES) finish(best);
+          }, SETTLE_AFTER_MS);
+        }
       }, error => {
         if (best) finish(best);
         else finish(null, new Error(errorMessage(error)));
@@ -78,6 +125,19 @@ const Location = (() => {
     return mapsUrl(location.lat, location.lng);
   }
 
+  async function refreshStatus() {
+    if (!window.isSecureContext) {
+      report("Location requires HTTPS. Open the deployed GEDIC website.", "error");
+      return "insecure";
+    }
+    const state = await permissionState();
+    if (state === "denied") report("Location blocked. Allow Location in this site's browser settings, then retry.", "error");
+    else if (state === "granted" && latest) report(describe(latest), "success");
+    else if (state === "granted") report("Location permission allowed. Tap a GPS action to capture a fresh position.", "success");
+    else report("Location permission not decided. Your browser will ask when you tap a GPS action.", "info");
+    return state;
+  }
+
   function legacyCopy(text) {
     const field = document.createElement("textarea");
     field.value = text;
@@ -93,18 +153,17 @@ const Location = (() => {
   }
 
   async function open() {
-    // Open synchronously so popup blockers do not discard the map while GPS is resolving.
-    const mapWindow = window.open("about:blank", "_blank");
     try {
       UI.toast("Finding the most accurate GPS position…", "info");
       const location = await get();
       const url = mapsUrl(location.lat, location.lng);
-      if (mapWindow) mapWindow.location.replace(url);
-      else window.location.href = url;
       const accuracy = location.accuracy ? ` (approximately ±${location.accuracy} m)` : "";
       UI.toast(`Current location pinned${accuracy}.`, "ok");
+      // Same-tab navigation is reliable after an asynchronous permission/GPS
+      // wait; opening a blank child first can leave an unusable blank tab.
+      window.location.assign(url);
+      return url;
     } catch (error) {
-      mapWindow?.close();
       const state = await permissionState();
       const help = state === "denied" ? " Open the browser site settings, allow Location, then retry." : "";
       UI.toast(errorMessage(error) + help, "err");
@@ -131,6 +190,7 @@ const Location = (() => {
       }
       const accuracy = location.accuracy ? ` Accuracy approximately ±${location.accuracy} m.` : "";
       UI.toast(`Exact map link copied.${accuracy}`, "ok");
+      report(`Google Maps link copied · ${describe(location)}`, location.accuracy > ACCEPTABLE_ACCURACY_METRES ? "warning" : "success");
       return link;
     } catch (error) {
       const state = await permissionState();
@@ -139,5 +199,5 @@ const Location = (() => {
     }
   }
 
-  return { get, getLink, mapsUrl, open, copy, permissionState, get latest() { return latest; } };
+  return { get, getLink, mapsUrl, open, copy, permissionState, refreshStatus, describe, get latest() { return latest; } };
 })();

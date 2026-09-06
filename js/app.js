@@ -187,7 +187,8 @@ const App = (() => {
     let p = null;
 
     if (DEMO) {
-      p = DB.getPatientByUid(uid);
+      p = DB.getPatientByUid(uid)
+        || DB.getAllPatients().find(patient => patient.emergencyToken === uid);
     } else {
       try {
         const publicDoc = await db.collection("publicProfiles").doc(uid).get();
@@ -198,7 +199,14 @@ const App = (() => {
       }
     }
 
-    Emergency.render(p, uid);
+    Emergency.render(p, uid, DEMO ? { mode: "demo" } : {});
+  }
+
+  function loadDemoEmergencyView() {
+    DB.seed();
+    go("pg-emergency");
+    const patient = DB.getPatientByUid("demo-uid-p1");
+    Emergency.render(patient, "demo-emergency-token-p1", { mode: "demo" });
   }
 
   async function loadStaffEmergencyView(patientId) {
@@ -356,7 +364,7 @@ const App = (() => {
     get profile() { return profile; },
     get firebaseAvailable() { return Boolean(auth && db); },
     setUser, beginAuthFlow, endAuthFlow, useDemoMode, useFirebaseMode, completeFirebaseLogin, go, switchTab, route,
-    fbFetchPatients, fbSyncPublicProfile, createEmergencyToken, patientRecord, publicProfile, loadEmergencyView, loadStaffEmergencyView,
+    fbFetchPatients, fbSyncPublicProfile, createEmergencyToken, patientRecord, publicProfile, loadEmergencyView, loadDemoEmergencyView, loadStaffEmergencyView,
     init
   };
 })();
@@ -393,7 +401,7 @@ function printCard() {
   if (!p) { UI.toast("Load your profile first.", "err"); return; }
   PrintCard.generate(p);
 }
-function demoView() { App.loadEmergencyView("demo-emergency-token-p1"); }
+function demoView() { App.loadDemoEmergencyView(); }
 
 // ── URL helper ─────────────────────────────────────────────
 // Returns the base URL of the app regardless of file:// or https://

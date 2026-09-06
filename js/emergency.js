@@ -53,12 +53,13 @@ const Emergency = (() => {
     };
     Object.entries(labels).forEach(([id, text]) => UI.setText(id, text));
     const clinical = access.mode === "clinical";
+    const demo = access.mode === "demo";
     setInEmergency("eAccessMode", access.mode === "biometric"
       ? "Biometric emergency match"
-      : clinical ? "Authorised clinical record" : "QR emergency link");
+      : clinical ? "Authorised clinical record" : demo ? "Demonstration emergency profile" : "QR emergency link");
     setInEmergency("eAccessTrust", access.mode === "biometric"
       ? `Responder authenticated · audit ${access.auditId || "recorded"}`
-      : clinical ? "Organisation-scoped staff access" : "Public minimum-data view");
+      : clinical ? "Organisation-scoped staff access" : demo ? "Sample data only · no real patient record" : "Public minimum-data view");
   }
 
   return { render, get _active() { return active; } };

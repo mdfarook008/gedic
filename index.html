@@ -12,12 +12,8 @@
 <link rel="stylesheet" href="css/main.css">
 <script src="js/theme.js"></script>
 
-<!--
-  QR lib: jsdelivr (not cdnjs.cloudflare.com which Edge/Safari blocks)
-  Firebase: loaded SYNCHRONOUSLY so they are ready before app.js runs.
-  This fixes the file:// stuck-loading bug.
--->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<!-- QR is hosted with GEDIC so generation does not depend on a third-party CDN. -->
+<script src="js/vendor/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>

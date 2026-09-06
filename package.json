@@ -6,8 +6,16 @@
   "scripts": {
     "dev": "node scripts/dev-server.js",
     "test": "node --test --test-isolation=none tests/*.test.js",
+    "test:rules": "firebase emulators:exec --project gedic-rules-test --only firestore \"node --test tests/firestore-rules.test.mjs\"",
     "check": "node tests/project-check.js",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.12.2",
+    "qrcodejs": "^1.0.0"
+  }
 }

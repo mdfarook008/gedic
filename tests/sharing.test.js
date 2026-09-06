@@ -41,3 +41,20 @@ test('SMS reserves a tab before waiting for location', async () => {
   assert.deepEqual(app.events.map(event => event[0]), ['open', 'location', 'navigate']);
   assert.match(app.events[2][1], /^sms:\+919444455566\?body=/);
 });
+
+test('SMS uses the emergency short code without an invalid international prefix', async () => {
+  const app = moduleContext('sms.js');
+  await app.evaluate(`SMS.send(${JSON.stringify(profile)}, 'ambulance')`);
+  assert.match(app.events[2][1], /^sms:108\?body=/);
+});
+
+test('a missing saved recipient is reported instead of silently messaging someone else', async () => {
+  const withoutDoctor = { ...profile, doctorPhone: '' };
+  const sms = moduleContext('sms.js');
+  await assert.rejects(sms.evaluate(`SMS.send(${JSON.stringify(withoutDoctor)}, 'doctor')`), /No doctor phone number/);
+  assert.deepEqual(sms.events, []);
+
+  const wa = moduleContext('whatsapp.js');
+  await assert.rejects(wa.evaluate(`WA.send(${JSON.stringify(withoutDoctor)}, 'doctor')`), /No doctor phone number/);
+  assert.deepEqual(wa.events, []);
+});

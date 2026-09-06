@@ -1,6 +1,6 @@
-const CACHE = "gedic-shell-v6";
+const CACHE = "gedic-shell-v7";
 const SHELL = [
-  "./", "./index.html", "./css/main.css", "./js/theme.js", "./js/firebase-config.js",
+  "./", "./index.html", "./css/main.css", "./js/theme.js", "./js/vendor/qrcode.min.js", "./js/firebase-config.js",
   "./js/db.js", "./js/ui.js", "./js/phone.js", "./js/location.js", "./js/whatsapp.js",
   "./js/sms.js", "./js/print.js", "./js/emergency.js", "./js/biometric.js",
   "./js/patient.js", "./js/doctor.js", "./js/hospital.js", "./js/notifications.js",

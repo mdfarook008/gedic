@@ -19,6 +19,15 @@ test('every local stylesheet and script referenced by index exists', () => {
   assets.forEach(asset => assert.ok(fs.existsSync(path.join(root, asset)), `Missing ${asset}`));
 });
 
+test('QR generation is self-hosted and the landing demo does not query production Firebase', () => {
+  const html = read('index.html');
+  const app = read('js/app.js');
+  assert.match(html, /src="js\/vendor\/qrcode\.min\.js"/);
+  assert.doesNotMatch(html, /cdn\.jsdelivr\.net\/npm\/qrcodejs/);
+  assert.match(app, /function loadDemoEmergencyView\(\)/);
+  assert.match(app, /function demoView\(\) \{ App\.loadDemoEmergencyView\(\); \}/);
+});
+
 test('README links to complete user and free-tier setup manuals', () => {
   const readme = read('README.md');
   for (const document of ['docs/USER-MANUAL.md', 'docs/SETUP-GUIDE.md', 'SECURITY-ARCHITECTURE.md']) {

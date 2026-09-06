@@ -17,6 +17,10 @@ const WA = (() => {
   }
 
   async function send(p, target) {
+    const savedPhone = target === 'doctor' ? p.doctorPhone : target === 'family' ? p.emergencyContact : '';
+    if ((target === 'doctor' || target === 'family') && !savedPhone) {
+      throw new Error(`No ${target === 'doctor' ? 'doctor' : 'emergency contact'} phone number is saved.`);
+    }
     // Reserve the tab during the click. Waiting for GPS otherwise causes
     // mobile/desktop popup blockers to discard the eventual WhatsApp window.
     const shareWindow = window.open('about:blank', '_blank');

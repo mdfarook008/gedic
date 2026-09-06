@@ -39,6 +39,15 @@ test('a failed emergency lookup clears stale patient state and disables disclosu
   assert.match(emergency, /detailIds\.forEach/);
 });
 
+test('browser Back restores the previous in-app page and cannot reopen a logged-out dashboard', () => {
+  const app = read('js/app.js');
+  assert.match(app, /history\.pushState\(historyState\(pageId/);
+  assert.match(app, /window\.addEventListener\("popstate", restoreHistory\)/);
+  assert.match(app, /if \(!pageAllowed\(pageId\).*pageId = "pg-land"/);
+  assert.match(app, /pageId === `pg-\$\{role\}`/);
+  assert.match(app, /paneId/);
+});
+
 test('README links to complete user and free-tier setup manuals', () => {
   const readme = read('README.md');
   for (const document of ['docs/USER-MANUAL.md', 'docs/SETUP-GUIDE.md', 'SECURITY-ARCHITECTURE.md']) {

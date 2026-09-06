@@ -21,6 +21,7 @@ const App = (() => {
   let role    = null;
   let profile = null;
   let authFlowActive = false;
+  let historyReady = false;
 
   function setUser(u, r, p) { user = u; role = r; profile = p; }
   function beginAuthFlow() { authFlowActive = true; }
@@ -29,23 +30,64 @@ const App = (() => {
   function useFirebaseMode() { if (auth && db) DEMO = false; }
 
   // ── Page navigation ──────────────────
-  function go(pageId) {
+  function pageAllowed(pageId) {
+    if (["pg-land", "pg-login", "pg-register"].includes(pageId)) return true;
+    if (pageId === "pg-emergency") return Boolean(Emergency._active)
+      || new URLSearchParams(location.search).has("view");
+    return pageId === `pg-${role}`;
+  }
+
+  function historyState(pageId, paneId = null) {
+    return { gedic: true, pageId, paneId };
+  }
+
+  function prepareHistory(currentPage) {
+    if (historyReady) return;
+    history.replaceState(historyState(currentPage || "pg-land"), "");
+    historyReady = true;
+  }
+
+  function go(pageId, options = {}) {
     const currentPage = document.querySelector(".page.active")?.id;
+    prepareHistory(currentPage);
+    if (!pageAllowed(pageId) && !(pageId === "pg-emergency" && options.allowEmergency)) pageId = "pg-land";
     if (pageId === "pg-land") UI.clearAuthForms();
     if (pageId === "pg-login" && currentPage !== "pg-login") UI.clearLoginForm();
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     const el = document.getElementById(pageId);
     if (el) el.classList.add("active");
+    if (!options.fromHistory && currentPage !== pageId) {
+      history.pushState(historyState(pageId), "");
+    }
   }
 
-  function switchTab(btn, paneId) {
+  function switchTab(btn, paneId, options = {}) {
     const dash = btn.closest(".dash");
     if (!dash) return;
+    const currentPane = dash.querySelector(".tab-pane.active")?.id;
     dash.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     btn.classList.add("active");
     dash.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
     const pane = document.getElementById(paneId);
     if (pane) pane.classList.add("active");
+    if (!options.fromHistory && currentPane !== paneId) {
+      const pageId = document.querySelector(".page.active")?.id || "pg-land";
+      prepareHistory(pageId);
+      history.pushState(historyState(pageId, paneId), "");
+    }
+  }
+
+  function restoreHistory(event) {
+    const state = event.state;
+    const requestedPage = state?.gedic ? state.pageId : "pg-land";
+    const pageId = pageAllowed(requestedPage) ? requestedPage : "pg-land";
+    go(pageId, { fromHistory: true });
+    if (state?.paneId && pageId !== "pg-land") {
+      const button = [...document.querySelectorAll(`#${pageId} [data-tab]`)]
+        .find(candidate => candidate.dataset.tab === state.paneId);
+      if (button) switchTab(button, state.paneId, { fromHistory: true });
+    }
+    if (pageId !== requestedPage) history.replaceState(historyState(pageId), "");
   }
 
   // ── Routing ──────────────────────────
@@ -183,7 +225,7 @@ const App = (() => {
 
   // ── Emergency view (public QR scan) ──
   async function loadEmergencyView(uid) {
-    go("pg-emergency");
+    go("pg-emergency", { allowEmergency: true });
     let p = null;
 
     if (DEMO) {
@@ -208,7 +250,7 @@ const App = (() => {
 
   function loadDemoEmergencyView() {
     DB.seed();
-    go("pg-emergency");
+    go("pg-emergency", { allowEmergency: true });
     const patient = DB.getPatientByUid("demo-uid-p1");
     Emergency.render(patient, "demo-emergency-token-p1", { mode: "demo" });
   }
@@ -217,7 +259,7 @@ const App = (() => {
     if (!patientId || !["doctor", "hospital"].includes(role)) {
       throw new Error("An authorised clinical account is required.");
     }
-    go("pg-emergency");
+    go("pg-emergency", { allowEmergency: true });
     let patient = null;
     if (DEMO) patient = DB.getAllPatients().find(item => (item.id || item.uid) === patientId);
     else {
@@ -280,6 +322,7 @@ const App = (() => {
    * Works for both file:// and https:// deployments.
    */
   function init() {
+    window.addEventListener("popstate", restoreHistory);
     // Determine if placeholder config
     const isPlaceholder = typeof FIREBASE_CONFIG === "undefined" || FIREBASE_CONFIG.apiKey.includes("DEMO_REPLACE");
     const params = new URLSearchParams(location.search);

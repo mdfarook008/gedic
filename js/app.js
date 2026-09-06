@@ -380,8 +380,8 @@ function openMod(id)      { UI.openModal(id); }
 function closeModal(id)   { UI.closeModal(id); }
 function openLoc()        { Location.open(); }
 function copyLoc()        { Location.copy(); }
-function doWA(t)          { const p = Emergency._active || App.profile; if(p) { closeModal("modWA"); UI.toast("Preparing location and WhatsApp message…","info"); return WA.send(p,t); } }
-function doSMS(t)         { const p = Emergency._active || App.profile; if(p) { closeModal("modSMS"); UI.toast("Preparing location and SMS message…","info"); return SMS.send(p,t); } }
+function doWA(t)          { const p = Emergency._active || App.profile; if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modWA"); UI.toast("Preparing location and WhatsApp message…","info"); return WA.send(p,t); }
+function doSMS(t)         { const p = Emergency._active || App.profile; if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modSMS"); UI.toast("Preparing location and SMS message…","info"); return SMS.send(p,t); }
 function callNum(target)  {
   if (target === "108") { window.location.href = "tel:108"; return; }
   const p = Emergency._active || App.profile;

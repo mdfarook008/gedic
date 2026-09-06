@@ -28,6 +28,14 @@ test('QR generation is self-hosted and the landing demo does not query productio
   assert.match(app, /function demoView\(\) \{ App\.loadDemoEmergencyView\(\); \}/);
 });
 
+test('a failed emergency lookup clears stale patient state and disables disclosure actions', () => {
+  const emergency = read('js/emergency.js');
+  assert.match(emergency, /if \(!profile\) \{\s*active = null;/);
+  assert.match(emergency, /No patient data was released/);
+  assert.match(emergency, /setProfileActionsEnabled\(false\)/);
+  assert.match(emergency, /detailIds\.forEach/);
+});
+
 test('README links to complete user and free-tier setup manuals', () => {
   const readme = read('README.md');
   for (const document of ['docs/USER-MANUAL.md', 'docs/SETUP-GUIDE.md', 'SECURITY-ARCHITECTURE.md']) {

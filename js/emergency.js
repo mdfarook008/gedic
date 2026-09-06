@@ -1,6 +1,19 @@
 /** Public, no-login emergency profile renderer. */
 const Emergency = (() => {
   let active = null;
+  const detailIds = [
+    "eB", "eAg", "eH", "emDiseases", "emAllergies", "eMedE",
+    "emFamilyName", "emFamilyPhone", "emDoctorName", "emDoctorPhone",
+    "eCallFam", "eCallDoc", "eDataStatus", "eUpdatedAt"
+  ];
+
+  function setProfileActionsEnabled(enabled) {
+    document.querySelectorAll("#pg-emergency [data-action='call'][data-recipient='family'], #pg-emergency [data-action='call'][data-recipient='doctor'], #pg-emergency [data-target='modWA'], #pg-emergency [data-target='modSMS']")
+      .forEach(button => {
+        button.disabled = !enabled;
+        button.setAttribute("aria-disabled", String(!enabled));
+      });
+  }
 
   function setInEmergency(id, value) {
     const element = document.querySelector(`#pg-emergency [id="${id}"]`);
@@ -10,12 +23,18 @@ const Emergency = (() => {
   function render(profile, uid, access = {}) {
     const page = document.getElementById("pg-emergency");
     if (!profile) {
+      active = null;
       page?.classList.add("profile-missing");
       setInEmergency("eN", "Emergency profile unavailable");
+      detailIds.forEach(id => setInEmergency(id, "—"));
+      setInEmergency("eAccessMode", "Invalid or disabled emergency link");
+      setInEmergency("eAccessTrust", "No patient data was released");
+      setProfileActionsEnabled(false);
       return;
     }
 
     page?.classList.remove("profile-missing");
+    setProfileActionsEnabled(true);
     active = { ...profile, uid: profile.uid || uid };
     const phone = value => value ? Phone.format(value) : "—";
     const updated = Number(profile.updatedAt || profile.createdAt || 0);

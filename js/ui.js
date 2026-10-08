@@ -1,6 +1,7 @@
 /** Shared, accessible UI helpers. */
 const UI = (() => {
   let toastTimer;
+  const modalTriggers = new WeakMap();
 
   function toast(message, type = "info") {
     const element = document.getElementById("toast");
@@ -28,8 +29,10 @@ const UI = (() => {
   function openModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
+    modalTriggers.set(modal, document.activeElement);
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
     modal.querySelector("button, input, select, textarea")?.focus();
   }
 
@@ -37,6 +40,8 @@ const UI = (() => {
     const modal = document.getElementById(id);
     modal?.classList.remove("open");
     modal?.setAttribute("aria-hidden", "true");
+    if (!document.querySelector(".overlay.open")) document.body.style.overflow = "";
+    modalTriggers.get(modal)?.focus();
   }
 
   function initModals() {
@@ -48,6 +53,21 @@ const UI = (() => {
     });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape") document.querySelectorAll(".overlay.open").forEach(modal => closeModal(modal.id));
+      if (event.key !== "Tab") return;
+      const modal = document.querySelector(".overlay.open");
+      if (!modal) return;
+      const controls = [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]')]
+        .filter(control => control.getClientRects().length);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (!first) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     });
   }
 

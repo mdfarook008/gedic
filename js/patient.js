@@ -12,7 +12,12 @@ const Patient = (() => {
     if (!p) return;
 
     // Greeting & action labels
-    document.getElementById("patGreet").textContent = `Hello, ${p.name || "Patient"} 👋`;
+    document.getElementById("patGreet").textContent = `${p.name || "My emergency profile"}`;
+    UI.setText("patientInitials", (p.name || "Medical ID").trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase());
+    UI.setText("patientSharingStatus", p.emergencyEnabled ? "Emergency QR sharing is on" : "Emergency QR sharing is off — enable it in Edit");
+    UI.setText("patientModeBadge", App.DEMO ? "Demo account" : "Personal medical ID");
+    const localNote = document.getElementById("qrLocalNote");
+    if (localNote) localNote.hidden = !["localhost", "127.0.0.1"].includes(location.hostname);
     document.getElementById("aFamLbl").textContent  = p.emergencyName  || p.emergencyContact || "—";
     document.getElementById("aDocLbl").textContent  = p.doctorName     || p.doctorPhone      || "—";
 
@@ -31,30 +36,38 @@ const Patient = (() => {
   function renderProfile(p) {
     const fmtPh = n => n ? Phone.format(n) : "—";
     const calculatedAge = ageFromDateOfBirth(p.dateOfBirth) || p.age;
-    const fields = [
-      { k: "👤 Name",       v: p.name },
-      { k: "🩸 Blood",      v: p.blood, blood: true },
-      { k: "🎂 Age",        v: calculatedAge ? calculatedAge + " yrs" : null },
-      { k: "📅 Date of birth", v: p.dateOfBirth || null },
-      { k: "🏥 Hospital",   v: p.hospital },
-      { k: "🫀 Conditions", v: p.diseases },
-      { k: "⚠️ Allergies",  v: p.allergies, danger: true },
-      { k: "💊 Medicines",  v: p.medicines },
-      { k: "👨‍👩‍👧 Family",    v: `${p.emergencyName||""} ${p.emergencyContact ? "· "+fmtPh(p.emergencyContact) : ""}`.trim() },
-      { k: "🩺 Doctor",     v: `${p.doctorName||""} ${p.doctorPhone ? "· "+fmtPh(p.doctorPhone) : ""}`.trim() },
+    const groups = [
+      { title: "Medical essentials", clinical: true, fields: [
+        { k: "Blood group", v: p.blood, blood: true },
+        { k: "Allergies", v: p.allergies, danger: true },
+        { k: "Conditions", v: p.diseases },
+        { k: "Medicines", v: p.medicines },
+      ] },
+      { title: "Personal details", fields: [
+        { k: "Full name", v: p.name },
+        { k: "Age", v: calculatedAge ? calculatedAge + " years" : null },
+        { k: "Date of birth", v: p.dateOfBirth || null },
+        { k: "Hospital", v: p.hospital },
+      ] },
+      { title: "Care contacts", fields: [
+        { k: "Emergency contact", v: `${p.emergencyName || ""} ${p.emergencyContact ? "· " + fmtPh(p.emergencyContact) : ""}`.trim() },
+        { k: "Doctor", v: `${p.doctorName || ""} ${p.doctorPhone ? "· " + fmtPh(p.doctorPhone) : ""}`.trim() },
+      ] },
     ];
     const grid = document.getElementById("profDisplay");
     if (!grid) return;
-    grid.innerHTML = fields.map(f => `
-      <div class="pfield">
-        <div class="pk">${UI.escape(f.k)}</div>
-        <div class="pv ${f.danger ? "col-red" : ""}">
-          ${f.blood
-            ? `<span class="blood-tag">${UI.escape(f.v || "—")}</span>`
-            : (f.v ? UI.escape(f.v) : `<span class="muted">—</span>`)
-          }
-        </div>
-      </div>`).join("");
+    grid.innerHTML = groups.map(group => `
+      <section class="profile-section ${group.clinical ? "profile-clinical" : ""}">
+        <h3>${UI.escape(group.title)}</h3>
+        <dl>${group.fields.map(field => `
+          <div class="pfield">
+            <dt class="pk">${UI.escape(field.k)}</dt>
+            <dd class="pv ${field.danger ? "col-red" : ""}">${field.blood
+              ? `<span class="blood-tag">${UI.escape(field.v || "Not provided")}</span>`
+              : field.v ? UI.escape(field.v) : '<span class="muted">Not provided</span>'}</dd>
+          </div>`).join("")}</dl>
+        ${group.clinical ? '<p class="profile-note">Patient-reported information. Confirm details with your care team.</p>' : ""}
+      </section>`).join("");
   }
 
   function renderQR(p) {
@@ -104,6 +117,11 @@ const Patient = (() => {
   }
 
   async function saveProfile() {
+    if (!UI.val("eName")) { UI.toast("Enter your full name before saving.", "err"); return; }
+    const birthDate = UI.val("eDob");
+    if (birthDate && ageFromDateOfBirth(birthDate) === "") {
+      UI.toast("Enter a valid date of birth within the last 125 years.", "err"); return;
+    }
     const ep = UI.val("eEPhone");
     const dp = UI.val("eDPhone");
     if (ep) { const r = Phone.validate(ep); if (!r.ok) { UI.toast("Emergency Phone: " + r.msg, "err"); return; } }
@@ -169,13 +187,16 @@ const Patient = (() => {
   }
 
   function dlQR() {
+    if (!App.profile?.emergencyEnabled) { UI.toast("Enable emergency QR sharing first.", "err"); return; }
     const el = document.getElementById("qrcode");
     if (!el) return;
     const canvas = el.querySelector("canvas");
     const a = document.createElement("a");
     a.download = "gedic-emergency-qr.png";
-    a.href = canvas ? canvas.toDataURL("image/png") : (el.querySelector("img")?.src || "");
-    if (a.href) { a.click(); UI.toast("⬇ QR downloaded!", "ok"); }
+    const data = canvas ? canvas.toDataURL("image/png") : el.querySelector("img")?.src;
+    if (!data) { UI.toast("The QR code is unavailable. Reload your profile and retry.", "err"); return; }
+    a.href = data;
+    a.click(); UI.toast("⬇ QR downloaded!", "ok");
   }
 
   async function copyQR() {

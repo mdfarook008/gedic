@@ -10,10 +10,18 @@ const Hospital = (() => {
   let _editId = null;
 
   async function load() {
-    document.getElementById("hospGreet").textContent = `${App.profile?.name || "Hospital"} Admin 🏥`;
-    const pts = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
-    _renderStats(pts);
-    _renderTable(pts);
+    document.getElementById("hospGreet").textContent = `${App.profile?.name || "Hospital"} Admin`;
+    const table = document.getElementById("hospTbody");
+    document.getElementById("hospStats").textContent = "Loading patient records…";
+    table.innerHTML = '<tr><td colspan="7" role="status">Loading patient records…</td></tr>';
+    try {
+      const pts = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
+      _renderStats(pts);
+      _renderTable(pts);
+    } catch (error) {
+      document.getElementById("hospStats").textContent = "Patient counts unavailable";
+      table.innerHTML = `<tr><td colspan="7" role="alert">${UI.escape(error.message)} <button class="btn btn-outline btn-sm" data-action="retry-hospital">Retry</button></td></tr>`;
+    }
   }
 
   function _renderStats(pts) {
@@ -31,7 +39,7 @@ const Hospital = (() => {
     const tbody = document.getElementById("hospTbody");
     const e = UI.escape;
     if (!pts.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">No patients yet. Add one above.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">No patients assigned. Ask your administrator to link patients to this organisation.</td></tr>`;
       return;
     }
     tbody.innerHTML = pts.map(p => `
@@ -43,8 +51,8 @@ const Hospital = (() => {
         <td class="col-red"   style="max-width:130px">${e(UI.trunc(p.allergies,28))}</td>
         <td>${e(p.doctorName||"—")}</td>
         <td style="display:flex;gap:5px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" data-action="staff-view" data-patient-id="${e(p.id||p.uid)}">👁</button>
-          <button class="btn btn-outline btn-sm" data-action="hospital-edit" data-patient-id="${e(p.id||p.uid)}">✏️</button>
+          <button class="btn btn-ghost btn-sm" data-action="staff-view" data-patient-id="${e(p.id||p.uid)}">View</button>
+          <button class="btn btn-outline btn-sm" data-action="hospital-edit" data-patient-id="${e(p.id||p.uid)}">Edit</button>
         </td>
       </tr>`).join("");
   }
@@ -65,7 +73,7 @@ const Hospital = (() => {
     const p   = pts.find(x => (x.id||x.uid) === id);
     if (!p) return;
     _editId = id;
-    document.getElementById("patModalTitle").textContent = "✏️ Edit Patient";
+    document.getElementById("patModalTitle").textContent = "Edit Patient";
     const map = { apName:"name",apAge:"age",apBlood:"blood",apHosp:"hospital",apDis:"diseases",apAll:"allergies",apMed:"medicines",apEName:"emergencyName",apEPhone:"emergencyContact",apDName:"doctorName",apDPhone:"doctorPhone" };
     Object.entries(map).forEach(([eid,k]) => { const el=document.getElementById(eid); if(el) el.value=p[k]||""; });
     UI.openModal("modPat");
@@ -75,13 +83,17 @@ const Hospital = (() => {
   async function save() {
     const name = UI.val("apName");
     if (!name) { UI.toast("Patient name is required.", "err"); return; }
+    const age = UI.val("apAge");
+    if (age && (!/^\d{1,3}$/.test(age) || Number(age) > 125)) {
+      UI.toast("Enter an age between 0 and 125 years.", "err"); return;
+    }
 
     const ep = UI.val("apEPhone"), dp = UI.val("apDPhone");
     if (ep) { const r = Phone.validate(ep); if (!r.ok) { UI.toast("Emergency Phone: "+r.msg,"err"); return; } }
     if (dp) { const r = Phone.validate(dp); if (!r.ok) { UI.toast("Doctor Phone: "   +r.msg,"err"); return; } }
 
     const data = {
-      name, age: UI.val("apAge"), blood: UI.val("apBlood"), hospital: UI.val("apHosp"),
+      name, age, blood: UI.val("apBlood"), hospital: UI.val("apHosp"),
       diseases: UI.val("apDis"), allergies: UI.val("apAll"), medicines: UI.val("apMed"),
       emergencyName: UI.val("apEName"),
       emergencyContact: ep ? Phone.clean(ep) : "",

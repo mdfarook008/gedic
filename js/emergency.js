@@ -51,7 +51,7 @@ const Emergency = (() => {
     setInEmergency("eAg", age !== "" ? `${age} yrs` : "—");
     setInEmergency("eH", profile.hospital);
     setInEmergency("emDiseases", profile.diseases);
-    setInEmergency("emAllergies", profile.allergies || "None reported");
+    setInEmergency("emAllergies", profile.allergies || "Not provided — confirm with the patient or care team");
     setInEmergency("eMedE", profile.medicines);
     setInEmergency("emFamilyName", profile.emergencyName);
     setInEmergency("emFamilyPhone", phone(profile.emergencyContact));

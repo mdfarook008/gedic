@@ -39,12 +39,16 @@
     "download-qr": () => Patient.dlQR(),
     "copy-qr": () => Patient.copyQR(),
     "print-card": () => printCard(),
+    "print-preview": () => window.print(),
     "rotate-token": () => Patient.rotateEmergencyToken(),
     "save-profile": () => Patient.saveProfile(),
     "save-patient": () => Hospital.save(),
     "biometric-start": () => BiometricEmergency.start(),
+    "biometric-demo-fill": () => BiometricEmergency.fillDemo(),
     "staff-view": element => App.loadStaffEmergencyView(element.dataset.patientId),
     "hospital-edit": element => Hospital.openEdit(element.dataset.patientId),
+    "retry-doctor": () => Doctor.load(),
+    "retry-hospital": () => Hospital.load(),
     "call-direct": element => callDirect(element.dataset.phone)
   };
 

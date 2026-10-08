@@ -32,12 +32,12 @@ const BiometricEmergency = (() => {
       throw new Error("Explain the emergency reason in 12–240 characters.");
     }
     if (!element("bioAttest")?.checked) {
-      throw new Error("Confirm that this is a genuine emergency and access will be audited.");
+      throw new Error(App.DEMO ? "Tick the confirmation box to continue with this practice request." : "Confirm that this is a genuine emergency and access will be audited.");
     }
   }
 
   async function demoMatch(details) {
-    setStatus("Demo scanner: checking liveness and matching an encrypted template…");
+    setStatus("Opening the sample patient profile. This is a simulation, not a biometric scan…");
     await new Promise(resolve => setTimeout(resolve, 900));
     const profile = DB.getAllPatients()[0];
     if (!profile) throw new Error("No enrolled demo patient is available.");
@@ -50,7 +50,7 @@ const BiometricEmergency = (() => {
       method: "simulated-biometric"
     });
     setStatus("Demo match accepted. Minimum emergency record released and audit event stored.", "ok");
-    Emergency.render(profile, profile.uid, { mode: "biometric", auditId: audit.id });
+    Emergency.render(profile, profile.uid, { mode: "demo", auditId: audit.id });
     setTimeout(() => App.go("pg-emergency"), 450);
   }
 
@@ -109,11 +109,32 @@ const BiometricEmergency = (() => {
     const button = element("bioStart");
     if (!button) return;
     const productionUnavailable = !App.DEMO && !GEDIC_FEATURES.biometricEmergencyAccess;
+    const setText = (id, text) => { const target = element(id); if (target) target.textContent = text; };
+    const demoHelp = element("bioDemoHelp");
+    if (demoHelp) demoHelp.hidden = !App.DEMO;
+    setText("bioModeBadge", App.DEMO ? "Demo workspace" : "Restricted emergency access");
+    setText("bioStart", App.DEMO ? "Open demo profile →" : "Continue with approved scanner →");
+    setText("bioAttestText", App.DEMO
+      ? "I understand this is a practice request and my incident details will be recorded locally."
+      : "I confirm this access is needed for immediate care. My identity, reason, and access time will be recorded.");
+    setText("bioMatchTitle", App.DEMO ? "A sample patient is selected" : "Identify with an approved device");
+    setText("bioMatchHelp", App.DEMO ? "The demo opens the first sample patient. No device or biometric information is used." : "Follow the connected scanner's instructions to check the patient's identity.");
+    setText("bioSubmitNote", App.DEMO ? "Sample data only. No scanner required." : "Access is limited to emergency information.");
+    const status = element("bioStatus");
+    if (status) status.hidden = true;
     button.disabled = productionUnavailable;
     if (productionUnavailable) {
       setStatus("Real biometric identification is unavailable in the free Spark deployment. Use the patient's revocable QR or normal clinical identity procedures.", "err");
     }
   }
 
-  return { start, configure };
+  function fillDemo() {
+    if (!App.DEMO) return;
+    if (element("bioIncident")) element("bioIncident").value = "DEMO-001";
+    if (element("bioReason")) element("bioReason").value = "Practice request: a simulated unconscious patient has no ID card.";
+    setStatus("Sample details are ready. Tick the confirmation box, then open the demo profile.");
+    element("bioAttest")?.focus();
+  }
+
+  return { start, configure, fillDemo };
 })();

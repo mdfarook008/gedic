@@ -63,29 +63,43 @@
 </div>
 
 <!-- ═══════════ MODAL: WhatsApp ══════════════════ -->
-<div class="overlay" id="modWA">
-  <div class="modal">
+<div class="overlay" id="modPrint">
+  <div role="dialog" aria-modal="true" aria-labelledby="modPrintTitle" class="modal print-preview-modal">
     <div class="mhead">
-      <h3>📲 Share via WhatsApp</h3>
-      <button class="mclose" data-action="close-modal" data-target="modWA">✕</button>
+      <h3 id="modPrintTitle">Preview your emergency card</h3>
+      <button class="mclose" aria-label="Close dialog" data-action="close-modal" data-target="modPrint">✕</button>
+    </div>
+    <p class="print-preview-help">Check your details before printing. Use your browser's print dialog to print or save a PDF.</p>
+    <div id="printCardContent"></div>
+    <div class="print-preview-actions">
+      <button class="btn btn-outline" data-action="close-modal" data-target="modPrint">Cancel</button>
+      <button class="btn btn-red" data-action="print-preview">Print or save PDF</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="modWA">
+  <div role="dialog" aria-modal="true" aria-labelledby="modWATitle" class="modal">
+    <div class="mhead">
+      <h3 id="modWATitle"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg> Share via WhatsApp</h3>
+      <button class="mclose" aria-label="Close dialog" data-action="close-modal" data-target="modWA">✕</button>
     </div>
     <p class="privacy-warning">The device composer will contain medical details, the public emergency link, and your fresh GPS location. Confirm the recipient before sending; GEDIC cannot recall the message.</p>
     <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Choose who to alert:</p>
     <div class="share-list">
       <button class="share-item" data-action="whatsapp" data-recipient="doctor">
-        <div class="si-icon" style="background:rgba(37,211,102,.12)">🩺</div>
+        <div class="si-icon" style="background:rgba(37,211,102,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div>
         <div><span>Send to Doctor</span><span class="si-sub" id="waDocLbl">—</span></div>
       </button>
       <button class="share-item" data-action="whatsapp" data-recipient="family">
-        <div class="si-icon" style="background:rgba(37,211,102,.12)">👨‍👩‍👧</div>
+        <div class="si-icon" style="background:rgba(37,211,102,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg></div>
         <div><span>Send to Family</span><span class="si-sub" id="waFamLbl">—</span></div>
       </button>
-      <button class="share-item" data-action="whatsapp" data-recipient="ambulance">
-        <div class="si-icon" style="background:rgba(37,211,102,.12)">🚑</div>
-        <div><span>Ambulance / 108</span><span class="si-sub">National Emergency Service</span></div>
+      <button class="share-item" data-action="call" data-recipient="108">
+        <div class="si-icon" style="background:rgba(37,211,102,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div>
+        <div><span>Call ambulance · 108</span><span class="si-sub">Open your device's phone dialler</span></div>
       </button>
       <button class="share-item" data-action="whatsapp" data-recipient="general">
-        <div class="si-icon" style="background:rgba(37,211,102,.12)">📤</div>
+        <div class="si-icon" style="background:rgba(37,211,102,.12)"></div>
         <div><span>General Share</span><span class="si-sub">Open WhatsApp share sheet</span></div>
       </button>
     </div>
@@ -94,24 +108,24 @@
 
 <!-- ═══════════ MODAL: SMS ═══════════════════════ -->
 <div class="overlay" id="modSMS">
-  <div class="modal">
+  <div role="dialog" aria-modal="true" aria-labelledby="modSMSTitle" class="modal">
     <div class="mhead">
-      <h3>📱 Send Emergency SMS</h3>
-      <button class="mclose" data-action="close-modal" data-target="modSMS">✕</button>
+      <h3 id="modSMSTitle"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3zM7 8h10M7 12h7"/></svg> Send Emergency SMS</h3>
+      <button class="mclose" aria-label="Close dialog" data-action="close-modal" data-target="modSMS">✕</button>
     </div>
     <p class="privacy-warning">The device composer will contain medical details, the public emergency link, and your fresh GPS location. Confirm the recipient before sending; GEDIC cannot recall the message.</p>
     <div class="share-list">
       <button class="share-item" data-action="sms" data-recipient="doctor">
-        <div class="si-icon" style="background:rgba(37,99,235,.12)">🩺</div>
+        <div class="si-icon" style="background:rgba(37,99,235,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div>
         <div><span>SMS to Doctor</span><span class="si-sub" id="smsDocLbl">—</span></div>
       </button>
       <button class="share-item" data-action="sms" data-recipient="family">
-        <div class="si-icon" style="background:rgba(37,99,235,.12)">👨‍👩‍👧</div>
+        <div class="si-icon" style="background:rgba(37,99,235,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg></div>
         <div><span>SMS to Family</span><span class="si-sub" id="smsFamLbl">—</span></div>
       </button>
-      <button class="share-item" data-action="sms" data-recipient="ambulance">
-        <div class="si-icon" style="background:rgba(37,99,235,.12)">🚑</div>
-        <div><span>SMS to Ambulance (108)</span><span class="si-sub">National Ambulance</span></div>
+      <button class="share-item" data-action="call" data-recipient="108">
+        <div class="si-icon" style="background:rgba(37,99,235,.12)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div>
+        <div><span>Call ambulance · 108</span><span class="si-sub">Open your device's phone dialler</span></div>
       </button>
     </div>
   </div>
@@ -119,10 +133,10 @@
 
 <!-- ═══════════ MODAL: Delete Confirm ════════════ -->
 <div class="overlay" id="modConfirm">
-  <div class="modal" style="max-width:380px">
+  <div role="dialog" aria-modal="true" aria-labelledby="modConfirmTitle" class="modal" style="max-width:380px">
     <div class="mhead">
-      <h3>⚠️ Confirm Delete</h3>
-      <button class="mclose" data-action="close-modal" data-target="modConfirm">✕</button>
+      <h3 id="modConfirmTitle"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg> Confirm Delete</h3>
+      <button class="mclose" aria-label="Close dialog" data-action="close-modal" data-target="modConfirm">✕</button>
     </div>
     <p style="color:var(--muted);font-size:.88rem;margin-bottom:20px" id="confirmMsg">Delete this record?</p>
     <div style="display:flex;gap:10px">
@@ -134,42 +148,42 @@
 
 <!-- ═══════════ MODAL: Add / Edit Patient ════════ -->
 <div class="overlay" id="modPat">
-  <div class="modal" style="max-width:540px">
+  <div role="dialog" aria-modal="true" aria-labelledby="patModalTitle" class="modal" style="max-width:540px">
     <div class="mhead">
       <h3 id="patModalTitle">+ Add Patient</h3>
-      <button class="mclose" data-action="close-modal" data-target="modPat">✕</button>
+      <button class="mclose" aria-label="Close dialog" data-action="close-modal" data-target="modPat">✕</button>
     </div>
     <div class="frow">
-      <div class="fg"><label>Full Name *</label><input id="apName" placeholder="Patient full name"></div>
-      <div class="fg"><label>Age</label><input id="apAge" type="number" placeholder="Age"></div>
+      <div class="fg"><label for="apName">Full Name *</label><input id="apName" placeholder="Patient full name"></div>
+      <div class="fg"><label for="apAge">Age</label><input id="apAge" type="number" placeholder="Age"></div>
     </div>
     <div class="frow">
       <div class="fg">
-        <label>Blood Group</label>
+        <label for="apBlood">Blood Group</label>
         <select id="apBlood">
           <option value="">Select</option><option>A+</option><option>A-</option>
           <option>B+</option><option>B-</option><option>O+</option><option>O-</option>
           <option>AB+</option><option>AB-</option>
         </select>
       </div>
-      <div class="fg"><label>Hospital</label><input id="apHosp" placeholder="Hospital name"></div>
+      <div class="fg"><label for="apHosp">Hospital</label><input id="apHosp" placeholder="Hospital name"></div>
     </div>
-    <div class="fg"><label>Diseases / Conditions</label><textarea id="apDis" rows="2" placeholder="e.g. Diabetes, Hypertension"></textarea></div>
-    <div class="fg"><label>Allergies ⚠️</label><textarea id="apAll" rows="2" placeholder="e.g. Penicillin, Nuts"></textarea></div>
-    <div class="fg"><label>Medicines</label><textarea id="apMed" rows="2" placeholder="e.g. Metformin 500mg twice daily"></textarea></div>
+    <div class="fg"><label for="apDis">Diseases / Conditions</label><textarea id="apDis" rows="2" placeholder="e.g. Diabetes, Hypertension"></textarea></div>
+    <div class="fg"><label for="apAll">Allergies <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg></label><textarea id="apAll" rows="2" placeholder="e.g. Penicillin, Nuts"></textarea></div>
+    <div class="fg"><label for="apMed">Medicines</label><textarea id="apMed" rows="2" placeholder="e.g. Metformin 500mg twice daily"></textarea></div>
     <div class="frow">
-      <div class="fg"><label>Emergency Contact Name</label><input id="apEName" placeholder="Family member"></div>
+      <div class="fg"><label for="apEName">Emergency Contact Name</label><input id="apEName" placeholder="Family member"></div>
       <div class="fg">
-        <label>Emergency Phone (10 digits)</label>
+        <label for="apEPhone">Emergency Phone (10 digits)</label>
         <input id="apEPhone" type="tel" placeholder="9876543210" maxlength="13"
           data-phone-feedback="apEPhone_fb">
         <div id="apEPhone_fb" class="phone-fb"></div>
       </div>
     </div>
     <div class="frow">
-      <div class="fg"><label>Doctor Name</label><input id="apDName" placeholder="Dr. Name"></div>
+      <div class="fg"><label for="apDName">Doctor Name</label><input id="apDName" placeholder="Dr. Name"></div>
       <div class="fg">
-        <label>Doctor Phone (10 digits)</label>
+        <label for="apDPhone">Doctor Phone (10 digits)</label>
         <input id="apDPhone" type="tel" placeholder="9444455566" maxlength="13"
           data-phone-feedback="apDPhone_fb">
         <div id="apDPhone_fb" class="phone-fb"></div>
@@ -177,7 +191,7 @@
     </div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost" style="flex:1" data-action="close-modal" data-target="modPat">Cancel</button>
-      <button class="btn btn-red" style="flex:1" id="apSaveBtn" data-action="save-patient">💾 Save to Database</button>
+      <button class="btn btn-red" style="flex:1" id="apSaveBtn" data-action="save-patient"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg> Save to Database</button>
     </div>
   </div>
 </div>
@@ -194,54 +208,61 @@
       </div>
       <div class="topbar-right">
         <button class="btn btn-outline" data-action="go" data-page="pg-login">Sign In</button>
-        <button class="btn btn-red" data-action="go" data-page="pg-register">Register Free</button>
+        <button class="btn btn-red" data-action="go" data-page="pg-register">Create account</button>
       </div>
     </nav>
-    <div class="hero">
-      <div class="badge-hero">🩺 Free · Firebase Cloud · Works on any device</div>
-      <h1>Emergency Medical ID<br><em>That Works Everywhere</em></h1>
-      <p>One QR scan gives doctors and first responders instant access to critical medical data — stored securely in Firebase, accessible worldwide.</p>
-      <div class="hero-btns">
-        <button class="btn btn-red btn-lg" data-action="go" data-page="pg-register">🆓 Create My GEDIC</button>
-        <button class="btn btn-ghost btn-lg" data-action="go" data-page="pg-login">Sign In</button>
-        <button class="btn btn-outline btn-lg" data-action="demo-view">👁 Emergency Demo</button>
+    <main class="hero">
+      <div class="hero-copy">
+        <div class="badge-hero"><span class="status-dot" aria-hidden="true"></span> Global Emergency Digital Identity Card</div>
+        <h1>Your medical essentials.<br><span>Ready when they matter.</span></h1>
+        <p>Keep your emergency information in one place. Share a QR card so first responders can find your allergies, conditions, and emergency contacts.</p>
+        <div class="hero-btns">
+          <button class="btn btn-red btn-lg" data-action="go" data-page="pg-register">Create your medical ID</button>
+          <button class="btn btn-outline btn-lg" data-action="demo-view">View emergency demo →</button>
+        </div>
+        <div class="hero-note">Free to create · No app required to scan</div><div class="hero-audience"><strong>Built around people.</strong><span>For patients, care teams, and first responders.</span></div>
       </div>
-    </div>
-    <div class="feat-grid">
-      <div class="feat card"><div class="feat-icon">☁️</div><h4>Cloud Database</h4><p>Stored in Firebase Firestore — accessible from any device, anywhere.</p></div>
-      <div class="feat card"><div class="feat-icon">🔍</div><h4>QR Emergency Card</h4><p>Personal QR links to your live medical profile. No app needed to scan.</p></div>
-      <div class="feat card"><div class="feat-icon">📲</div><h4>WhatsApp + SMS</h4><p>One tap sends your location and full medical info to doctor or family.</p></div>
-      <div class="feat card"><div class="feat-icon">🖨️</div><h4>Print as Card</h4><p>Print a physical wallet-sized emergency card with QR code to carry with you.</p></div>
-    </div>
+      <section class="workflow-panel" aria-labelledby="workflow-title">
+        <span class="eyebrow">How GEDIC works</span>
+        <h2 id="workflow-title">A profile you can carry with you.</h2>
+        <ol class="workflow-steps">
+          <li><div><strong>Add your medical essentials</strong><p>Record your conditions, allergies, medicines, and people to contact.</p></div></li>
+          <li><div><strong>Choose what you share</strong><p>Enable your public emergency summary and download or print your QR card.</p></div></li>
+          <li><div><strong>Make information accessible</strong><p>A scan opens your enabled emergency summary. You can revoke the link at any time.</p></div></li>
+        </ol>
+      </section>
+    </main>
+    <section class="feat-grid" aria-label="Medical ID features">
+      <div class="feat card"><div class="feat-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg></div><h4>Your medical profile</h4><p>Update your information as your medicines and care needs change.</p></div>
+      <div class="feat card"><div class="feat-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg></div><h4>QR emergency access</h4><p>Share essential information through a revocable emergency link.</p></div>
+      <div class="feat card"><div class="feat-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg></div><h4>Contact your support</h4><p>Open WhatsApp or SMS to share details and your current location.</p></div>
+      <div class="feat card"><div class="feat-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6z"/></svg></div><h4>A card for your wallet</h4><p>Print your QR card and keep it somewhere easy to find.</p></div>
+    </section>
   </div>
 
   <!-- ══════ LOGIN ══════ -->
   <div class="page" id="pg-login">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <button class="btn btn-ghost" data-action="go" data-page="pg-land">← Back</button>
     </nav>
     <div class="auth-wrap">
       <div class="auth-box">
-        <h2>Welcome back</h2>
-        <p class="sub">Sign in to your GEDIC account</p>
-        <!-- Emails written without @ to prevent Cloudflare email obfuscation -->
-        <div class="demo-hint">
-          🔑 Local demo accounts (localhost or <code>?demo=1</code> only):<br>
-          Patient &nbsp;: <strong>patient [at] gedic.app</strong> / demo1234<br>
-          Doctor &nbsp;&nbsp;: <strong>doctor [at] gedic.app</strong> / demo1234<br>
-          Hospital : <strong>hospital [at] gedic.app</strong> / demo1234<br>
-          Responder: <strong>responder [at] gedic.app</strong> / demo1234<br>
-          <small style="color:var(--ink5)">(replace [at] with @ when typing)</small>
-        </div>
+        <span class="eyebrow">Your medical ID, in one place</span><h2>Welcome back.</h2>
+        <p class="sub">Sign in to manage your profile or access your care workspace.</p>
         <div class="alert alert-ok" id="loginInfo"></div>
         <div class="alert alert-err" id="loginErr"></div>
-        <div class="fg"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="off"></div>
-        <div class="fg"><label>Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="off"
+        <div class="fg"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"></div>
+        <div class="fg"><label for="loginPass">Password</label><input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password"
           ></div>
         <button class="btn btn-red btn-xl" id="loginBtn" data-action="login">Sign In →</button>
         <div class="divider"><span>new here?</span></div>
         <button class="btn btn-ghost btn-xl" data-action="go" data-page="pg-register">Create free account</button>
+        <details class="demo-hint">
+          <summary>Explore with a demo account</summary>
+          <p>On localhost or with <code>?demo=1</code>, use one of these emails and password <code>demo1234</code>.</p>
+          <p>Patient: <strong>patient&#64;gedic.app</strong><br>Doctor: <strong>doctor&#64;gedic.app</strong><br>Hospital: <strong>hospital&#64;gedic.app</strong><br>Responder: <strong>responder&#64;gedic.app</strong></p>
+        </details>
       </div>
     </div>
   </div>
@@ -249,7 +270,7 @@
   <!-- ══════ REGISTER ══════ -->
   <div class="page" id="pg-register">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <button class="btn btn-ghost" data-action="go" data-page="pg-land">← Back</button>
     </nav>
     <div class="auth-wrap" style="align-items:flex-start;padding-top:36px">
@@ -260,19 +281,19 @@
 
         <div class="sh">Account Type</div>
         <div class="role-grid">
-          <div class="role-opt sel" data-action="pick-role" data-role="patient">🧑‍⚕️ Patient</div>
-          <div class="role-opt role-locked" data-action="pick-role" data-role="doctor">🔒 Doctor · invite only</div>
-          <div class="role-opt role-locked" data-action="pick-role" data-role="hospital">🔒 Hospital · invite only</div>
-          <div class="role-opt role-locked" data-action="pick-role" data-role="responder">🔒 Responder · invite only</div>
+          <button type="button" class="role-opt sel" data-action="pick-role" data-role="patient" aria-pressed="true">Patient</button>
+          <button type="button" class="role-opt role-locked" data-action="pick-role" data-role="doctor" disabled>Doctor · invite only</button>
+          <button type="button" class="role-opt role-locked" data-action="pick-role" data-role="hospital" disabled>Hospital · invite only</button>
+          <button type="button" class="role-opt role-locked" data-action="pick-role" data-role="responder" disabled>Responder · invite only</button>
         </div>
 
         <div class="sh">Login Credentials</div>
         <div class="frow">
-          <div class="fg"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com" autocomplete="off"></div>
-          <div class="fg"><label>Password (min 12 chars)</label><input type="password" id="regPwd" minlength="12" placeholder="Use a memorable passphrase" autocomplete="new-password"></div>
+          <div class="fg"><label for="regEmail">Email</label><input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="fg"><label for="regPwd">Password (min 12 chars)</label><input type="password" id="regPwd" minlength="12" placeholder="Use a memorable passphrase" autocomplete="new-password"></div>
         </div>
         <div class="fg">
-          <label>Account mobile (optional · automatic SMS requires notification backend)</label>
+          <label for="regPhone">Account mobile (optional · automatic SMS requires notification backend)</label>
           <input id="regPhone" type="tel" placeholder="9876543210" maxlength="13" autocomplete="tel" data-phone-feedback="regPhone_fb">
           <div id="regPhone_fb" class="phone-fb"></div>
         </div>
@@ -281,32 +302,32 @@
         <div id="fPatient">
           <div class="sh">Medical Profile</div>
           <div class="frow">
-            <div class="fg"><label>Full Name *</label><input id="rName" placeholder="Your full name"></div>
-            <div class="fg"><label>Date of birth</label><input id="rDob" type="date"></div>
+            <div class="fg"><label for="rName">Full Name *</label><input id="rName" placeholder="Your full name"></div>
+            <div class="fg"><label for="rDob">Date of birth</label><input id="rDob" type="date"></div>
           </div>
           <div class="frow">
             <div class="fg">
-              <label>Blood Group</label>
+              <label for="rBlood">Blood Group</label>
               <select id="rBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
             </div>
-            <div class="fg"><label>Hospital</label><input id="rHosp" placeholder="Your hospital name"></div>
+            <div class="fg"><label for="rHosp">Hospital</label><input id="rHosp" placeholder="Your hospital name"></div>
           </div>
           <label class="bio-attest" style="margin:14px 0"><input id="rEmergencyEnabled" type="checkbox"> <span>Publish my emergency summary through a random QR link. Anyone holding the link can read the selected medical and contact fields. I can disable or rotate it later.</span></label>
-          <div class="fg"><label>Diseases / Conditions</label><textarea id="rDis" placeholder="e.g. Type 2 Diabetes, Hypertension" rows="2"></textarea></div>
-          <div class="fg"><label>Allergies ⚠️</label><textarea id="rAll" placeholder="e.g. Penicillin, Latex, Peanuts" rows="2"></textarea></div>
-          <div class="fg"><label>Current Medicines</label><textarea id="rMed" placeholder="e.g. Metformin 500mg twice daily" rows="2"></textarea></div>
+          <div class="fg"><label for="rDis">Diseases / Conditions</label><textarea id="rDis" placeholder="e.g. Type 2 Diabetes, Hypertension" rows="2"></textarea></div>
+          <div class="fg"><label for="rAll">Allergies <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg></label><textarea id="rAll" placeholder="e.g. Penicillin, Latex, Peanuts" rows="2"></textarea></div>
+          <div class="fg"><label for="rMed">Current Medicines</label><textarea id="rMed" placeholder="e.g. Metformin 500mg twice daily" rows="2"></textarea></div>
           <div class="frow">
-            <div class="fg"><label>Emergency Contact Name</label><input id="rEName" placeholder="e.g. Spouse / Parent"></div>
+            <div class="fg"><label for="rEName">Emergency Contact Name</label><input id="rEName" placeholder="e.g. Spouse / Parent"></div>
             <div class="fg">
-              <label>Emergency Phone (10 digits)</label>
+              <label for="rEPhone">Emergency Phone (10 digits)</label>
               <input id="rEPhone" type="tel" placeholder="9876543210" maxlength="13" data-phone-feedback="rEPhone_fb">
               <div id="rEPhone_fb" class="phone-fb"></div>
             </div>
           </div>
           <div class="frow">
-            <div class="fg"><label>Doctor Name</label><input id="rDName" placeholder="Dr. Name"></div>
+            <div class="fg"><label for="rDName">Doctor Name</label><input id="rDName" placeholder="Dr. Name"></div>
             <div class="fg">
-              <label>Doctor Phone (10 digits)</label>
+              <label for="rDPhone">Doctor Phone (10 digits)</label>
               <input id="rDPhone" type="tel" placeholder="9444455566" maxlength="13" data-phone-feedback="rDPhone_fb">
               <div id="rDPhone_fb" class="phone-fb"></div>
             </div>
@@ -317,13 +338,13 @@
         <div id="fDoctor" style="display:none">
           <div class="sh">Doctor Profile</div>
           <div class="frow">
-            <div class="fg"><label>Full Name</label><input id="rDocName" placeholder="Dr. Your Name"></div>
-            <div class="fg"><label>Specialization</label><input id="rDocSpec" placeholder="e.g. Cardiology"></div>
+            <div class="fg"><label for="rDocName">Full Name</label><input id="rDocName" placeholder="Dr. Your Name"></div>
+            <div class="fg"><label for="rDocSpec">Specialization</label><input id="rDocSpec" placeholder="e.g. Cardiology"></div>
           </div>
           <div class="frow">
-            <div class="fg"><label>Hospital</label><input id="rDocHosp" placeholder="Hospital name"></div>
+            <div class="fg"><label for="rDocHosp">Hospital</label><input id="rDocHosp" placeholder="Hospital name"></div>
             <div class="fg">
-              <label>Phone (10 digits)</label>
+              <label for="rDocPhone">Phone (10 digits)</label>
               <input id="rDocPhone" type="tel" placeholder="9444455566" maxlength="13" data-phone-feedback="rDocPhone_fb">
               <div id="rDocPhone_fb" class="phone-fb"></div>
             </div>
@@ -334,11 +355,11 @@
         <div id="fHospital" style="display:none">
           <div class="sh">Hospital Profile</div>
           <div class="frow">
-            <div class="fg"><label>Hospital Name</label><input id="rHospName" placeholder="Hospital name"></div>
-            <div class="fg"><label>Location</label><input id="rHospLoc" placeholder="City, State"></div>
+            <div class="fg"><label for="rHospName">Hospital Name</label><input id="rHospName" placeholder="Hospital name"></div>
+            <div class="fg"><label for="rHospLoc">Location</label><input id="rHospLoc" placeholder="City, State"></div>
           </div>
           <div class="fg">
-            <label>Phone (10 digits)</label>
+            <label for="rHospPhone">Phone (10 digits)</label>
             <input id="rHospPhone" type="tel" placeholder="4428293333" maxlength="13" data-phone-feedback="rHospPhone_fb">
             <div id="rHospPhone_fb" class="phone-fb"></div>
           </div>
@@ -354,22 +375,28 @@
   <!-- ══════ PATIENT DASHBOARD ══════ -->
   <div class="page" id="pg-patient">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <div class="topbar-right"><span class="pill pill-red">Patient</span><button class="btn btn-ghost" data-action="logout">Log out</button></div>
     </nav>
     <div class="dash">
-      <div class="dhead"><h2 id="patGreet">My Emergency Profile</h2><p>Patient-controlled emergency summary. Sharing is optional and revocable.</p></div>
+      <div class="workspace-context"><span>My health workspace</span><span class="mode-badge" id="patientModeBadge">Personal medical ID</span></div>
+      <header class="patient-intro"><div class="identity-avatar" id="patientInitials" aria-hidden="true">ID</div><div class="patient-identity"><span class="eyebrow">Your emergency medical ID</span><h1 id="patGreet">My emergency profile</h1><p>Keep the essentials current. Make them easy to find when it matters.</p></div><button class="btn btn-red" data-action="switch-tab" data-tab="tp-qr">View my QR card <span aria-hidden="true">↗</span></button></header>
+      <div class="profile-status"><span class="status-dot" aria-hidden="true"></span><span id="patientSharingStatus">Emergency sharing status</span><span class="status-divider" aria-hidden="true">·</span><span>Patient-reported information</span></div>
       <div class="tabs">
-        <button class="tab active" data-action="switch-tab" data-tab="tp-profile">🪪 Profile</button>
-        <button class="tab" data-action="switch-tab" data-tab="tp-qr">📲 QR Card</button>
-        <button class="tab" data-action="switch-tab" data-tab="tp-actions">🚨 Emergency</button>
-        <button class="tab" data-action="switch-tab" data-tab="tp-edit">✏️ Edit</button>
+        <button class="tab active" data-action="switch-tab" data-tab="tp-profile"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg> Profile</button>
+        <button class="tab" data-action="switch-tab" data-tab="tp-qr"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg> QR Card</button>
+        <button class="tab" data-action="switch-tab" data-tab="tp-actions"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg> Emergency</button>
+        <button class="tab" data-action="switch-tab" data-tab="tp-edit"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 5 5M3 21l5-1L21 7l-5-5L3 15z"/></svg> Edit</button>
       </div>
 
       <!-- Profile -->
       <div class="tab-pane active" id="tp-profile">
-        <div class="sh">Medical Identity</div>
+        <div class="sh">Emergency summary</div>
         <div class="pgrid" id="profDisplay"></div>
+        <section class="profile-next-actions" aria-label="Manage your medical ID">
+          <button class="next-action" data-action="switch-tab" data-tab="tp-edit"><span class="action-index">01</span><span><strong>Keep your details up to date</strong><small>Review medicines, allergies, and care contacts.</small></span><span aria-hidden="true">↗</span></button>
+          <button class="next-action" data-action="switch-tab" data-tab="tp-actions"><span class="action-index">02</span><span><strong>Reach someone when you need help</strong><small>Call your contacts or prepare an emergency message.</small></span><span aria-hidden="true">↗</span></button>
+        </section>
       </div>
 
       <!-- QR Card -->
@@ -379,40 +406,41 @@
           <p style="color:var(--muted);font-size:.8rem">Anyone holding an enabled QR can read your patient-provided emergency summary.</p>
           <div id="qrcode"></div>
           <div class="qr-url" id="qrUrl"></div>
+          <p id="qrLocalNote" class="profile-note" hidden>This preview link opens on this computer. To use a QR from another phone, use your account on the hosted GEDIC website. Demo records stay in this browser.</p>
           <div class="qr-btns">
-            <button class="btn btn-red" data-action="download-qr">⬇ Download QR</button>
-            <button class="btn btn-ghost" data-action="copy-qr">🔗 Copy Link</button>
-            <button class="btn btn-ghost" data-action="print-card">🖨️ Print Card</button>
+            <button class="btn btn-red" data-action="download-qr"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg> Download QR</button>
+            <button class="btn btn-ghost" data-action="copy-qr"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></svg> Copy Link</button>
+            <button class="btn btn-ghost" data-action="print-card"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6z"/></svg> Print Card</button>
             <button class="btn btn-danger" data-action="rotate-token">↻ Revoke & Rotate</button>
           </div>
         </div>
         <div style="margin-top:14px;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:14px 16px;font-size:.82rem;color:var(--muted)">
-          💡 <strong style="color:#818cf8">Print Card</strong> opens a physical wallet-sized emergency card with your QR code. You can print it and keep it in your wallet or ID card holder.
+           <strong>Print Card</strong> opens a preview of your emergency card. Check the details, then print it or save a PDF.
         </div>
       </div>
 
       <!-- Emergency Actions -->
       <div class="tab-pane" id="tp-actions">
         <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:.82rem;color:var(--muted)">
-          <span style="color:var(--red);font-weight:700">⚡ EMERGENCY ACTIONS</span> — Live GPS location auto-attached to all messages.
+          <span style="color:var(--red);font-weight:700"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg> EMERGENCY ACTIONS</span> — Live GPS location auto-attached to all messages.
         </div>
-        <div class="sh">📞 Call</div>
+        <div class="sh"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a15 15 0 0 1-7-7l2-2z"/></svg> Call</div>
         <div class="agrid">
-          <button class="aBtn call" data-action="call" data-recipient="family"><div class="ai">📞</div><div class="al">Emergency Contact<span class="as" id="aFamLbl">—</span></div></button>
-          <button class="aBtn call" data-action="call" data-recipient="doctor"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="aDocLbl">—</span></div></button>
-          <button class="aBtn emer" data-action="call" data-recipient="108"><div class="ai">🚑</div><div class="al">Ambulance 108<span class="as">National Emergency India</span></div></button>
+          <button class="aBtn call" data-action="call" data-recipient="family"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a15 15 0 0 1-7-7l2-2z"/></svg></div><div class="al">Emergency Contact<span class="as" id="aFamLbl">—</span></div></button>
+          <button class="aBtn call" data-action="call" data-recipient="doctor"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div><div class="al">Call Doctor<span class="as" id="aDocLbl">—</span></div></button>
+          <button class="aBtn emer" data-action="call" data-recipient="108"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div><div class="al">Ambulance 108<span class="as">National Emergency India</span></div></button>
         </div>
-        <div class="sh">💬 Message</div>
+        <div class="sh"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3zM7 8h10M7 12h7"/></svg> Message</div>
         <div class="agrid">
-          <button class="aBtn wa" data-action="open-modal" data-target="modWA"><div class="ai">📲</div><div class="al">WhatsApp Alert<span class="as">Doctor · Family · Ambulance</span></div></button>
-          <button class="aBtn sms" data-action="open-modal" data-target="modSMS"><div class="ai">📱</div><div class="al">Emergency SMS<span class="as">With GPS location link</span></div></button>
+          <button class="aBtn wa" data-action="open-modal" data-target="modWA"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg></div><div class="al">WhatsApp Alert<span class="as">Doctor · Family · Ambulance</span></div></button>
+          <button class="aBtn sms" data-action="open-modal" data-target="modSMS"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3zM7 8h10M7 12h7"/></svg></div><div class="al">Emergency SMS<span class="as">With GPS location link</span></div></button>
         </div>
-        <div class="sh">📍 Location & Card</div>
+        <div class="sh"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2"/></svg> Location & Card</div>
         <div class="location-status" data-location-status role="status">Checking browser location permission…</div>
         <div class="agrid">
-          <button class="aBtn loc" data-action="open-location"><div class="ai">📍</div><div class="al">Open My Location<span class="as">Google Maps</span></div></button>
-          <button class="aBtn loc" data-action="copy-location"><div class="ai">🗺</div><div class="al">Copy Location Link<span class="as">Paste anywhere</span></div></button>
-          <button class="aBtn print" data-action="print-card"><div class="ai">🖨️</div><div class="al">Print Emergency Card<span class="as">Physical wallet card + QR</span></div></button>
+          <button class="aBtn loc" data-action="open-location"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2"/></svg></div><div class="al">Open My Location<span class="as">Google Maps</span></div></button>
+          <button class="aBtn loc" data-action="copy-location"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2"/></svg></div><div class="al">Copy Location Link<span class="as">Paste anywhere</span></div></button>
+          <button class="aBtn print" data-action="print-card"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6z"/></svg></div><div class="al">Print Emergency Card<span class="as">Physical wallet card + QR</span></div></button>
         </div>
       </div>
 
@@ -421,37 +449,37 @@
         <div class="card">
           <div class="sh">Update Medical Profile</div>
           <div class="frow">
-            <div class="fg"><label>Full Name</label><input id="eName"></div>
-            <div class="fg"><label>Date of birth</label><input id="eDob" type="date"></div>
+            <div class="fg"><label for="eName">Full Name</label><input id="eName"></div>
+            <div class="fg"><label for="eDob">Date of birth</label><input id="eDob" type="date"></div>
           </div>
           <div class="frow">
             <div class="fg">
-              <label>Blood Group</label>
+              <label for="eBlood">Blood Group</label>
               <select id="eBlood"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
             </div>
-            <div class="fg"><label>Hospital</label><input id="eHosp"></div>
+            <div class="fg"><label for="eHosp">Hospital</label><input id="eHosp"></div>
           </div>
-          <div class="fg"><label>Diseases</label><textarea id="eDis" rows="2"></textarea></div>
-          <div class="fg"><label>Allergies ⚠️</label><textarea id="eAll" rows="2"></textarea></div>
-          <div class="fg"><label>Medicines</label><textarea id="eMed" rows="2"></textarea></div>
+          <div class="fg"><label for="eDis">Diseases</label><textarea id="eDis" rows="2"></textarea></div>
+          <div class="fg"><label for="eAll">Allergies <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg></label><textarea id="eAll" rows="2"></textarea></div>
+          <div class="fg"><label for="eMed">Medicines</label><textarea id="eMed" rows="2"></textarea></div>
           <div class="frow">
-            <div class="fg"><label>Emergency Contact Name</label><input id="eEName"></div>
+            <div class="fg"><label for="eEName">Emergency Contact Name</label><input id="eEName"></div>
             <div class="fg">
-              <label>Emergency Phone (10 digits)</label>
+              <label for="eEPhone">Emergency Phone (10 digits)</label>
               <input id="eEPhone" type="tel" maxlength="13" data-phone-feedback="eEPhone_fb">
               <div id="eEPhone_fb" class="phone-fb"></div>
             </div>
           </div>
           <div class="frow">
-            <div class="fg"><label>Doctor Name</label><input id="eDName"></div>
+            <div class="fg"><label for="eDName">Doctor Name</label><input id="eDName"></div>
             <div class="fg">
-              <label>Doctor Phone (10 digits)</label>
+              <label for="eDPhone">Doctor Phone (10 digits)</label>
               <input id="eDPhone" type="tel" maxlength="13" data-phone-feedback="eDPhone_fb">
               <div id="eDPhone_fb" class="phone-fb"></div>
             </div>
           </div>
           <label class="bio-attest" style="margin:14px 0"><input id="eEmergencyEnabled" type="checkbox"> <span>Enable public emergency QR sharing. Anyone with the current random link can view the emergency summary until I disable or rotate it.</span></label>
-          <button class="btn btn-red" id="saveBtn" data-action="save-profile">💾 Save to Database</button>
+          <button class="btn btn-red" id="saveBtn" data-action="save-profile"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg> Save to Database</button>
         </div>
       </div>
     </div>
@@ -460,7 +488,7 @@
   <!-- ══════ DOCTOR DASHBOARD ══════ -->
   <div class="page" id="pg-doctor">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <div class="topbar-right"><span class="pill pill-green">Doctor</span><button class="btn btn-ghost" data-action="logout">Log out</button></div>
     </nav>
     <div class="dash">
@@ -479,7 +507,7 @@
   <!-- ══════ HOSPITAL DASHBOARD ══════ -->
   <div class="page" id="pg-hospital">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <div class="topbar-right"><span class="pill pill-amber">Hospital</span><button class="btn btn-ghost" data-action="logout">Log out</button></div>
     </nav>
     <div class="dash">
@@ -498,48 +526,52 @@
   <!-- ══════ RESPONDER ══════ -->
   <div class="page" id="pg-responder">
     <nav class="topbar">
-      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span></span></div>
+      <div class="logo"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>GED<span>IC</span><small class="brand-descriptor">Emergency medical identity</small></span></div>
       <div class="topbar-right"><span class="pill pill-red">Responder</span><button class="btn btn-ghost" data-action="logout">Log out</button></div>
     </nav>
-    <div class="dash">
-      <div class="dhead"><div><h2>Cardless Emergency Access</h2><p>Identify an unconscious patient through an approved biometric scanner.</p></div><span class="security-chip">🔐 Audited break-glass</span></div>
+    <main class="dash responder-workspace">
+      <div class="workspace-context"><span>Responder workspace</span><span class="mode-badge" id="bioModeBadge">Emergency access</span></div>
+      <header class="workspace-heading">
+        <div><span class="eyebrow">When a patient cannot identify themselves</span><h1>Find the information<br>that helps you help.</h1><p>Access a patient's essential medical details when they have no emergency QR card.</p></div>
+        <div class="workspace-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2"><rect x="10" y="6" width="44" height="52" rx="6"/><path d="M23 6v6h18V6M32 21v16m-8-8h16M21 46h22"/></svg></div>
+      </header>
+      <ol class="access-steps" aria-label="Emergency access steps">
+        <li><span class="step-number">1</span><div><strong>Describe the situation</strong><small>Incident number and reason</small></div></li>
+        <li><span class="step-number">2</span><div><strong>Confirm access</strong><small>Acknowledge the access record</small></div></li>
+        <li><span class="step-number">3</span><div><strong>Review the profile</strong><small>Medical essentials and contacts</small></div></li>
+      </ol>
       <div class="bio-layout">
-        <section class="card bio-card">
-          <div class="bio-icon" aria-hidden="true">◎</div>
-          <div>
-            <span class="eyebrow">Emergency identification</span>
-            <h3>Start protected biometric match</h3>
-            <p class="muted">GEDIC sends a one-time challenge to registered scanner software. Raw fingerprints and face images must never enter this webpage or Firestore.</p>
+        <section class="card bio-card" aria-labelledby="bioFormTitle">
+          <div class="form-heading"><div class="bio-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18"/></svg></div><div><h2 id="bioFormTitle">Emergency access request</h2><p>A few details before you continue.</p></div></div>
+          <div class="demo-banner" id="bioDemoHelp" hidden>
+            <span class="mode-badge">Practice mode</span>
+            <p>Try the workflow with a sample patient. No fingerprint or face scan takes place.</p>
+            <button type="button" class="text-button" data-action="biometric-demo-fill">Use sample incident details <span aria-hidden="true">↗</span></button>
           </div>
-          <div class="fg"><label for="bioIncident">Incident reference</label><input id="bioIncident" maxlength="40" placeholder="e.g. EMS-2026-0142" autocomplete="off"></div>
-          <div class="fg"><label for="bioReason">Reason for emergency override</label><textarea id="bioReason" maxlength="240" rows="3" placeholder="Patient is unconscious after a road accident and has no ID."></textarea></div>
-          <label class="bio-attest"><input id="bioAttest" type="checkbox"> <span>I confirm this is necessary for immediate care. I understand my identity, reason, time, and result are audited.</span></label>
-          <button class="btn btn-red btn-xl" id="bioStart" data-action="biometric-start">Scan with approved device</button>
+          <div class="fg"><label for="bioIncident">Incident or case number <span class="required-label">Required</span></label><input id="bioIncident" maxlength="40" placeholder="e.g. EMS-2026-0142" autocomplete="off" aria-describedby="bioIncidentHelp"><small class="field-help" id="bioIncidentHelp">Use your team's reference. 4–40 characters; no spaces.</small></div>
+          <div class="fg"><label for="bioReason">Why do you need access? <span class="required-label">Required</span></label><textarea id="bioReason" maxlength="240" rows="3" placeholder="Describe what happened and why the patient cannot provide their details." aria-describedby="bioReasonHelp"></textarea><small class="field-help" id="bioReasonHelp">A short explanation is enough. 12–240 characters.</small></div>
+          <label class="bio-attest"><input id="bioAttest" type="checkbox"> <span id="bioAttestText">I confirm this access is needed for immediate care. My identity, reason, and access time will be recorded.</span></label>
+          <div class="form-submit"><button type="button" class="btn btn-red btn-xl" id="bioStart" data-action="biometric-start">Continue with approved scanner</button><span class="submit-note" id="bioSubmitNote">Access is limited to emergency information.</span></div>
           <div id="bioStatus" class="bio-status" role="status" aria-live="polite" hidden></div>
         </section>
-        <aside class="card trust-card">
-          <span class="eyebrow">Security controls</span>
-          <h3>What protects the patient?</h3>
-          <ol class="trust-list">
-            <li><strong>Verified responder</strong><span>Staff accounts are provisioned by an administrator, not self-selected.</span></li>
-            <li><strong>Liveness + 1:N match</strong><span>A certified service checks a live sample against enrolled templates.</span></li>
-            <li><strong>Replay protection</strong><span>Every scan is bound to a short-lived, single-use server nonce.</span></li>
-            <li><strong>Minimum disclosure</strong><span>Only emergency fields return; the patient registry is never searchable here.</span></li>
-            <li><strong>Immutable audit trail</strong><span>Who, why, when, incident, scanner, and match transaction are recorded server-side.</span></li>
-          </ol>
-          <div class="demo-note">Demo mode simulates the external scanner and labels the audit method accordingly. It is not real biometric identification.</div>
+        <aside class="responder-help" aria-label="Help with emergency access">
+          <section class="help-section"><span class="eyebrow">A little guidance</span><h2>What happens next?</h2><ol class="help-flow"><li><span>01</span><div><strong>Your request is checked</strong><p>The incident number, reason, and confirmation must be complete.</p></div></li><li><span>02</span><div><strong id="bioMatchTitle">Identify with an approved device</strong><p id="bioMatchHelp">Follow the connected scanner's instructions to check the patient's identity.</p></div></li><li><span>03</span><div><strong>Emergency details open</strong><p>Review allergies, medicines, conditions, and emergency contacts. Verify details before acting.</p></div></li></ol></section>
+          <section class="help-note"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><h3>Every access leaves a record</h3><p>This helps protect the patient and makes emergency access accountable.</p></div></section>
+          <details class="privacy-details"><summary>How is patient privacy protected?</summary><p>Only emergency information is released. A real scanner keeps raw fingerprints and face images outside this page. Access is tied to the responder, incident, reason, and time.</p></details>
+          <section class="qr-help"><h3>Does the patient have a QR card?</h3><p>Scan it with your phone camera to open their enabled emergency summary. You do not need this form.</p></section>
         </aside>
       </div>
-    </div>
+      <footer class="workspace-footer"><span>GEDIC · Emergency medical identity</span><span>Essential information. Responsible access.</span></footer>
+    </main>
   </div>
 
   <!-- ══════ EMERGENCY PUBLIC VIEW ══════ -->
   <div class="page" id="pg-emergency">
-    <div class="emg-stripe">🚨 EMERGENCY MEDICAL INFORMATION — SHOW THIS TO FIRST RESPONDERS</div>
+    <div class="emg-stripe"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg> EMERGENCY MEDICAL INFORMATION — SHOW THIS TO FIRST RESPONDERS</div>
     <div class="emg-wrap">
       <div class="emg-banner">
-        <div style="font-size:2.2rem;margin-bottom:8px">🆘</div>
-        <h2>EMERGENCY MEDICAL PROFILE</h2>
+
+        <h2>Emergency medical profile</h2>
         <p id="eAccessMode">QR emergency link</p>
         <small id="eAccessTrust" class="access-trust">Public minimum-data view</small>
       </div>
@@ -551,32 +583,32 @@
       </div>
       <div class="info-card">
         <h3>Critical Information</h3>
-        <div class="irow"><span class="ik">👤 Patient</span><span class="iv" id="eN">—</span></div>
-        <div class="irow"><span class="ik">🩸 Blood Group</span><span class="iv"><span class="blood-tag" id="eB">—</span></span></div>
-        <div class="irow"><span class="ik">🎂 Age</span><span class="iv" id="eAg">—</span></div>
-        <div class="irow"><span class="ik">🏥 Hospital</span><span class="iv" id="eH">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg> Patient</span><span class="iv" id="eN">—</span></div>
+        <div class="irow"><span class="ik"> Blood Group</span><span class="iv"><span class="blood-tag" id="eB">—</span></span></div>
+        <div class="irow"><span class="ik"> Age</span><span class="iv" id="eAg">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg> Hospital</span><span class="iv" id="eH">—</span></div>
       </div>
       <div class="info-card">
         <h3>Medical Conditions</h3>
-        <div class="irow"><span class="ik">🫀 Conditions</span><span class="iv col-amber" id="emDiseases">—</span></div>
-        <div class="irow"><span class="ik">⚠️ Allergies</span><span class="iv col-red" id="emAllergies">—</span></div>
-        <div class="irow"><span class="ik">💊 Medicines</span><span class="iv"           id="eMedE">—</span></div>
+        <div class="irow"><span class="ik"> Conditions</span><span class="iv col-amber" id="emDiseases">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></svg> Allergies</span><span class="iv col-red" id="emAllergies">—</span></div>
+        <div class="irow"><span class="ik"> Medicines</span><span class="iv"           id="eMedE">—</span></div>
       </div>
       <div class="info-card">
         <h3>Emergency Contacts</h3>
-        <div class="irow"><span class="ik">👨‍👩‍👧 Family</span><span class="iv col-green" id="emFamilyName">—</span></div>
-        <div class="irow"><span class="ik">📞 Phone</span><span class="iv" id="emFamilyPhone">—</span></div>
-        <div class="irow"><span class="ik">🩺 Doctor</span><span class="iv" id="emDoctorName">—</span></div>
-        <div class="irow"><span class="ik">📞 Dr. Phone</span><span class="iv" id="emDoctorPhone">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-3 6-3 6 0M15 9h3m-3 4h3"/></svg> Family</span><span class="iv col-green" id="emFamilyName">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a15 15 0 0 1-7-7l2-2z"/></svg> Phone</span><span class="iv" id="emFamilyPhone">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg> Doctor</span><span class="iv" id="emDoctorName">—</span></div>
+        <div class="irow"><span class="ik"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a15 15 0 0 1-7-7l2-2z"/></svg> Dr. Phone</span><span class="iv" id="emDoctorPhone">—</span></div>
       </div>
       <div style="display:grid;gap:10px;margin-bottom:28px">
         <div class="location-status" data-location-status role="status">Checking browser location permission…</div>
-        <button class="aBtn call" style="width:100%" data-action="call" data-recipient="family"><div class="ai">📞</div><div class="al">Call Emergency Contact<span class="as" id="eCallFam">—</span></div></button>
-        <button class="aBtn call" style="width:100%" data-action="call" data-recipient="doctor"><div class="ai">🩺</div><div class="al">Call Doctor<span class="as" id="eCallDoc">—</span></div></button>
-        <button class="aBtn wa" style="width:100%" data-action="open-modal" data-target="modWA"><div class="ai">📲</div><div class="al">WhatsApp Emergency Alert<span class="as">Sends with GPS location</span></div></button>
-        <button class="aBtn sms" style="width:100%" data-action="open-modal" data-target="modSMS"><div class="ai">📱</div><div class="al">Send Emergency SMS<span class="as">To doctor + GPS link</span></div></button>
-        <button class="aBtn loc" style="width:100%" data-action="open-location"><div class="ai">📍</div><div class="al">Share Location<span class="as">Google Maps</span></div></button>
-        <button class="aBtn emer" style="width:100%" data-action="call" data-recipient="108"><div class="ai">🚑</div><div class="al">Call Ambulance 108<span class="as">National Emergency</span></div></button>
+        <button class="aBtn call" style="width:100%" data-action="call" data-recipient="family"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a15 15 0 0 1-7-7l2-2z"/></svg></div><div class="al">Call Emergency Contact<span class="as" id="eCallFam">—</span></div></button>
+        <button class="aBtn call" style="width:100%" data-action="call" data-recipient="doctor"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div><div class="al">Call Doctor<span class="as" id="eCallDoc">—</span></div></button>
+        <button class="aBtn wa" style="width:100%" data-action="open-modal" data-target="modWA"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6zM21 12h-9v9"/></svg></div><div class="al">WhatsApp Emergency Alert<span class="as">Sends with GPS location</span></div></button>
+        <button class="aBtn sms" style="width:100%" data-action="open-modal" data-target="modSMS"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3zM7 8h10M7 12h7"/></svg></div><div class="al">Send Emergency SMS<span class="as">To doctor + GPS link</span></div></button>
+        <button class="aBtn loc" style="width:100%" data-action="open-location"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2"/></svg></div><div class="al">Share Location<span class="as">Google Maps</span></div></button>
+        <button class="aBtn emer" style="width:100%" data-action="call" data-recipient="108"><div class="ai"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div><div class="al">Call Ambulance 108<span class="as">National Emergency</span></div></button>
       </div>
       <p style="text-align:center;color:var(--muted);font-size:.7rem;padding-bottom:40px">Powered by GEDIC · Firebase Cloud · Free Emergency Medical System</p>
     </div>

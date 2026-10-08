@@ -165,6 +165,7 @@ const Auth = (() => {
     const password = UI.val("regPwd");
     UI.hideAlert("regErr");
     if (!email || !password) { UI.showAlert("regErr", "Email and password are required."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { UI.showAlert("regErr", "Enter a valid email address."); return; }
     if (password.length < 12) { UI.showAlert("regErr", "Use at least 12 characters. A memorable passphrase is recommended."); return; }
 
     let profile;

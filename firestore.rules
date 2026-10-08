@@ -21,7 +21,7 @@ service cloud.firestore {
         && data.organisationId == userDoc().organisationId;
     }
     function assignedDoctor(data) {
-      return data.careTeamUids is list && request.auth.uid in data.careTeamUids;
+      return request.auth.uid in data.careTeamUids;
     }
     function authzFieldsUnchanged() {
       return request.resource.data.get('uid', null) == resource.data.get('uid', null)
@@ -65,9 +65,9 @@ service cloud.firestore {
         || (activeStaff('hospital') && sameOrganisation(resource.data))
         || (activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data));
       allow list: if signedIn()
-        && (isOwner(resource.data.uid)
-          || (activeStaff('hospital') && sameOrganisation(resource.data))
-          || (activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data)));
+        && ((userDoc().role == 'patient' && isOwner(resource.data.uid))
+          || (userDoc().role == 'hospital' && activeStaff('hospital') && sameOrganisation(resource.data))
+          || (userDoc().role == 'doctor' && activeStaff('doctor') && sameOrganisation(resource.data) && assignedDoctor(resource.data)));
       allow create: if isOwner(request.resource.data.uid)
         && patientId == request.auth.uid
         && request.resource.data.get('organisationId', null) == null

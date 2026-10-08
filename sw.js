@@ -1,4 +1,4 @@
-const CACHE = "gedic-shell-v7";
+const CACHE = "gedic-shell-v11";
 const SHELL = [
   "./", "./index.html", "./css/main.css", "./js/theme.js", "./js/vendor/qrcode.min.js", "./js/firebase-config.js",
   "./js/db.js", "./js/ui.js", "./js/phone.js", "./js/location.js", "./js/whatsapp.js",
@@ -29,5 +29,13 @@ self.addEventListener("fetch", event => {
       }
       return response;
     })
-    .catch(() => caches.match(event.request).then(response => response || caches.match("./index.html"))));
+    .catch(async () => {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      if (event.request.mode === "navigate") {
+        const shell = await caches.match("./index.html");
+        if (shell) return shell;
+      }
+      return new Response("GEDIC is offline. This resource is unavailable.", { status: 503, headers: { "Content-Type": "text/plain" } });
+    }));
 });

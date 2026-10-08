@@ -8,10 +8,18 @@
 const Doctor = (() => {
 
   async function load() {
-    document.getElementById("docGreet").textContent = `Dr. ${App.profile?.name || ""} 🩺`;
-    const patients = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
-    _renderStats(patients);
-    _renderTable(patients);
+    document.getElementById("docGreet").textContent = App.profile?.name || "Doctor workspace";
+    const table = document.getElementById("docTbody");
+    document.getElementById("docStats").textContent = "Loading patient records…";
+    table.innerHTML = '<tr><td colspan="6" role="status">Loading patient records…</td></tr>';
+    try {
+      const patients = App.DEMO ? DB.getAllPatients() : await App.fbFetchPatients();
+      _renderStats(patients);
+      _renderTable(patients);
+    } catch (error) {
+      document.getElementById("docStats").textContent = "Patient counts unavailable";
+      table.innerHTML = `<tr><td colspan="6" role="alert">${UI.escape(error.message)} <button class="btn btn-outline btn-sm" data-action="retry-doctor">Retry</button></td></tr>`;
+    }
   }
 
   function _renderStats(pts) {
@@ -26,7 +34,7 @@ const Doctor = (() => {
     const tbody = document.getElementById("docTbody");
     const e = UI.escape;
     if (!pts.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">No patients yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">No patients assigned. Ask your administrator to assign patients to your care team.</td></tr>`;
       return;
     }
     tbody.innerHTML = pts.map(p => `
@@ -37,8 +45,8 @@ const Doctor = (() => {
         <td class="col-amber" style="max-width:180px">${e(UI.trunc(p.diseases,45))}</td>
         <td><div>${e(p.emergencyName||"—")}</div><div class="td-sub">${e(p.emergencyContact?"+91 "+p.emergencyContact:"")}</div></td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" data-action="staff-view" data-patient-id="${e(p.id||p.uid)}">👁 View</button>
-          <button class="btn btn-green btn-sm" data-action="call-direct" data-phone="${e(p.emergencyContact||"108")}">📞</button>
+          <button class="btn btn-ghost btn-sm" data-action="staff-view" data-patient-id="${e(p.id||p.uid)}">View profile</button>
+          <button class="btn btn-green btn-sm" data-action="call-direct" data-phone="${e(p.emergencyContact||"")}" aria-label="Call emergency contact" ${p.emergencyContact ? '' : 'disabled title="No emergency contact number saved"'}>Call</button>
         </td>
       </tr>`).join("");
   }

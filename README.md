@@ -1,4 +1,4 @@
-# GEDIC — Global Emergency Digital Identity Card
+# GEDIC â€” Global Emergency Digital Identity Card
 
 GEDIC is a responsive healthcare web application that gives patients a QR-linked emergency medical profile. A patient manages their record while a first responder can scan the QR and read the intentionally public emergency fields without signing in.
 
@@ -48,7 +48,7 @@ Open the exact address printed in your terminal. Keep the terminal running while
 If port `4173` is already occupied, the server automatically tries `4174`, `4175`, and subsequent ports instead of crashing. For example:
 
 ```text
-Port 4173 is already in use; trying 4174…
+Port 4173 is already in use; trying 4174â€¦
 GEDIC is running at http://127.0.0.1:4174
 ```
 
@@ -67,7 +67,7 @@ Localhost starts in demonstration mode by default. Production deployments never 
 
 ## Cardless biometric emergency access
 
-The responder dashboard now demonstrates a protected **break-glass** workflow for an unconscious patient who has no QR card. Sign in with `responder@gedic.app` / `demo1234`, enter an incident reference and reason, confirm the emergency declaration, and start the simulated scan. The demo records a local audit event and is deliberately labelled as simulation.
+The responder dashboard now demonstrates a protected **break-glass** workflow for an unconscious patient who has no QR card. Sign in with `responder@gedic.app` / `demo1234`, choose **Use sample incident details** (or enter a case number and reason), tick the practice confirmation, and choose **Open demo profile**. The demo records a local audit event and is deliberately labelled as simulation.
 
 A normal browser cannot identify an unknown person from a phone fingerprint reader. Real deployment requires a certified liveness-capable scanner and a governed 1:N biometric provider. Raw fingerprint/face data must not enter browser JavaScript or Firestore. See [`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md) for the flow, threat model, gateway contract, limitations, and production checklist.
 
@@ -92,10 +92,10 @@ Demo data is stored only in that browser's `localStorage`. It is not shared with
 
 ## Theme selector
 
-The appearance selector is fixed near the bottom of the screen:
+The appearance selector is in the page header:
 
-- **Light** uses the clean indigo healthcare interface.
-- **Dark** uses the low-glare navy interface.
+- **Light** uses the neutral healthcare interface with teal accents.
+- **Dark** uses the low-glare charcoal interface with teal accents.
 - **Auto** follows the operating-system theme and reacts when the system theme changes.
 
 The choice is saved in `localStorage` and restored on the next visit.
@@ -113,7 +113,7 @@ npm run check
 
 ## Connect Firebase
 
-The project configuration is in `js/firebase-config.js`. If using a different Firebase project, replace every value in `FIREBASE_CONFIG` with the Web App configuration shown under **Firebase Console → Project settings → Your apps**.
+The project configuration is in `js/firebase-config.js`. If using a different Firebase project, replace every value in `FIREBASE_CONFIG` with the Web App configuration shown under **Firebase Console â†’ Project settings â†’ Your apps**.
 
 ### Install the Firebase CLI on Windows
 
@@ -137,9 +137,9 @@ Do not run both forms of the same command. Choose either the globally installed 
 
 In Firebase Console:
 
-1. Open **Build → Authentication → Sign-in method**.
+1. Open **Build â†’ Authentication â†’ Sign-in method**.
 2. Enable **Email/Password**.
-3. Open **Build → Firestore Database** and create the database.
+3. Open **Build â†’ Firestore Database** and create the database.
 4. If you have not already done so, install the Firebase CLI:
 
    ```powershell
@@ -223,7 +223,7 @@ Google currently documents a MailApp limit of 100 email recipients per day for p
 1. Open <https://script.google.com/> while signed into the Gmail account that will send GEDIC notifications.
 2. Select **New project** and name it `GEDIC Login Notifications`.
 3. Replace the editor contents with the complete contents of `apps-script/Code.gs`.
-4. Open **Project Settings → Script properties**.
+4. Open **Project Settings â†’ Script properties**.
 5. Add a property named `FIREBASE_API_KEY`.
 6. Copy the `apiKey` value from `js/firebase-config.js` into that property.
 
@@ -231,14 +231,14 @@ The Firebase web API key identifies the Firebase project; the Firebase ID token 
 
 ### 2. Deploy the Apps Script web app
 
-1. Select **Deploy → New deployment**.
+1. Select **Deploy â†’ New deployment**.
 2. Choose **Web app**.
 3. Set **Execute as** to **Me**.
 4. Set **Who has access** to **Anyone**.
 5. Select **Deploy** and authorize MailApp and external-request access.
 6. Copy the deployed URL ending in `/exec`.
 
-For a new personal Apps Script project, Google may show **Google hasn't verified this app** because MailApp and external requests use sensitive OAuth scopes. If the developer email shown is your own Google account and you created/reviewed this exact script, select **Advanced → Go to GEDIC Login Notifications (unsafe) → Allow**. Only the script owner performs this authorization when the web app executes as **Me**; GEDIC visitors do not authorize access to your Gmail account. Do not continue if the developer email or project name is unfamiliar.
+For a new personal Apps Script project, Google may show **Google hasn't verified this app** because MailApp and external requests use sensitive OAuth scopes. If the developer email shown is your own Google account and you created/reviewed this exact script, select **Advanced â†’ Go to GEDIC Login Notifications (unsafe) â†’ Allow**. Only the script owner performs this authorization when the web app executes as **Me**; GEDIC visitors do not authorize access to your Gmail account. Do not continue if the developer email or project name is unfamiliar.
 
 ### 3. Connect it to GEDIC
 
@@ -259,13 +259,13 @@ The relay sends:
 - A security notification after a verified Firebase login
 - At most one login notification per user every five minutes
 
-Because the browser uses a cross-origin fire-and-forget request, GEDIC can confirm that the request was queued but cannot prove inbox delivery. Check **Apps Script → Executions** to diagnose rejected tokens, exhausted quotas, or MailApp errors.
+Because the browser uses a cross-origin fire-and-forget request, GEDIC can confirm that the request was queued but cannot prove inbox delivery. Check **Apps Script â†’ Executions** to diagnose rejected tokens, exhausted quotas, or MailApp errors.
 
 ## Improve verification-email visibility
 
 Inbox or spam placement is controlled by the recipient's email provider and cannot be guaranteed by JavaScript or Firebase. Improve recognition using these steps:
 
-1. Open **Firebase Console → Authentication → Templates → Email address verification**.
+1. Open **Firebase Console â†’ Authentication â†’ Templates â†’ Email address verification**.
 2. Change the sender name to `GEDIC Security`.
 3. Use a clear subject such as `Verify your GEDIC emergency identity`.
 4. Set a monitored reply-to address if Firebase offers that field in your console.
@@ -350,7 +350,7 @@ For the best result:
 3. Grant GEDIC location permission and choose **Precise location** when the operating system offers that choice.
 4. Test outdoors or near a window if the reported accuracy is poor.
 
-The persistent GPS status displays permission guidance, six-decimal coordinates, the browser/device accuracy estimate, and capture time. An accuracy radius above `±100 m` is labelled low accuracy. No website can guarantee an exact physical address: GPS accuracy depends on the handset, satellite visibility, operating-system privacy settings, and whether the browser falls back to Wi-Fi or network positioning. GEDIC shares the coordinate pin rather than guessing an address through a third-party geocoder.
+The persistent GPS status displays permission guidance, six-decimal coordinates, the browser/device accuracy estimate, and capture time. An accuracy radius above `Â±100 m` is labelled low accuracy. No website can guarantee an exact physical address: GPS accuracy depends on the handset, satellite visibility, operating-system privacy settings, and whether the browser falls back to Wi-Fi or network positioning. GEDIC shares the coordinate pin rather than guessing an address through a third-party geocoder.
 
 **Open My Location** navigates the current tab to Google Maps after capture, avoiding blank popup tabs; use the browser Back button to return to GEDIC. **Copy Location Link** copies only the `https://www.google.com/maps/...` URL. GEDIC rejects a browser position older than 30 seconds and waits for a fresh reading.
 

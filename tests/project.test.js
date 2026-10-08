@@ -183,8 +183,8 @@ test('cardless biometric access uses a protected backend contract', () => {
   const client = read('js/biometric.js');
   const backend = read('functions/index.js');
   const rules = read('firestore.rules');
-  assert.match(html, /Cardless Emergency Access/);
-  assert.match(html, /It is not real biometric identification/);
+  assert.match(html, /id="pg-responder"/);
+  assert.match(html, /No fingerprint or face scan takes place/);
   assert.match(client, /window\.GEDIC_SCANNER\.capture/);
   assert.match(client, /createBiometricChallenge/);
   assert.match(client, /resolveBiometricEmergency/);

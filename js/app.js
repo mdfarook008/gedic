@@ -23,7 +23,10 @@ const App = (() => {
   let authFlowActive = false;
   let historyReady = false;
 
-  function setUser(u, r, p) { user = u; role = r; profile = p; }
+  function setUser(u, r, p) {
+    if (user?.uid !== u?.uid && typeof Emergency !== "undefined") Emergency.render(null, null);
+    user = u; role = r; profile = p;
+  }
   function beginAuthFlow() { authFlowActive = true; }
   function endAuthFlow() { authFlowActive = false; }
   function useDemoMode() { DEMO = true; }
@@ -56,6 +59,11 @@ const App = (() => {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     const el = document.getElementById(pageId);
     if (el) el.classList.add("active");
+    const appearance = document.querySelector(".theme-switcher");
+    const navigation = el?.querySelector(".topbar");
+    const emergencyHeading = el?.querySelector(".emg-banner");
+    if (appearance && navigation) navigation.insertBefore(appearance, navigation.lastElementChild);
+    else if (appearance && emergencyHeading) emergencyHeading.append(appearance);
     if (!options.fromHistory && currentPage !== pageId) {
       history.pushState(historyState(pageId), "");
     }
@@ -65,8 +73,11 @@ const App = (() => {
     const dash = btn.closest(".dash");
     if (!dash) return;
     const currentPane = dash.querySelector(".tab-pane.active")?.id;
+    const navigationButton = [...dash.querySelectorAll(".tabs [data-tab]")]
+      .find(tab => tab.dataset.tab === paneId) || btn;
     dash.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    btn.classList.add("active");
+    navigationButton.classList.add("active");
+    if (navigationButton !== btn) navigationButton.focus();
     dash.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
     const pane = document.getElementById(paneId);
     if (pane) pane.classList.add("active");
@@ -180,7 +191,7 @@ const App = (() => {
       const snap = await query.get();
       return snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
-    } catch (e) { UI.toast("Error loading patients: " + e.message, "err"); return []; }
+    } catch (e) { throw new Error("Patient records could not be loaded. Check your connection and organisation access, then retry.", { cause: e }); }
   }
 
   function createEmergencyToken() {
@@ -229,8 +240,7 @@ const App = (() => {
     let p = null;
 
     if (DEMO) {
-      p = DB.getPatientByUid(uid)
-        || DB.getAllPatients().find(patient => patient.emergencyToken === uid);
+      p = DB.getAllPatients().find(patient => patient.emergencyToken === uid && patient.emergencyEnabled === true);
     } else {
       try {
         const publicDoc = await db.collection("publicProfiles").doc(uid).get();
@@ -259,6 +269,7 @@ const App = (() => {
     if (!patientId || !["doctor", "hospital"].includes(role)) {
       throw new Error("An authorised clinical account is required.");
     }
+    Emergency.render(null, null);
     go("pg-emergency", { allowEmergency: true });
     let patient = null;
     if (DEMO) patient = DB.getAllPatients().find(item => (item.id || item.uid) === patientId);
@@ -266,7 +277,7 @@ const App = (() => {
       const snapshot = await db.collection("patients").doc(patientId).get();
       if (snapshot.exists) patient = { id: snapshot.id, ...snapshot.data() };
     }
-    Emergency.render(patient, patientId, { mode: "clinical" });
+    Emergency.render(patient, patientId, { mode: DEMO ? "demo" : "clinical" });
   }
 
   // ── Startup ──────────────────────────
@@ -427,11 +438,12 @@ function openMod(id)      { UI.openModal(id); }
 function closeModal(id)   { UI.closeModal(id); }
 function openLoc()        { Location.open(); }
 function copyLoc()        { Location.copy(); }
-function doWA(t)          { const p = Emergency._active || App.profile; if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modWA"); UI.toast("Preparing location and WhatsApp message…","info"); return WA.send(p,t); }
-function doSMS(t)         { const p = Emergency._active || App.profile; if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modSMS"); UI.toast("Preparing location and SMS message…","info"); return SMS.send(p,t); }
+function communicationProfile() { return document.querySelector(".page.active")?.id === "pg-emergency" ? Emergency._active : App.profile; }
+function doWA(t)          { const p = communicationProfile(); if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modWA"); UI.toast("Preparing location and WhatsApp message…","info"); return WA.send(p,t); }
+function doSMS(t)         { const p = communicationProfile(); if (!p) { UI.toast("No emergency profile is loaded.", "err"); return; } closeModal("modSMS"); UI.toast("Preparing location and SMS message…","info"); return SMS.send(p,t); }
 function callNum(target)  {
   if (target === "108") { window.location.href = "tel:108"; return; }
-  const p = Emergency._active || App.profile;
+  const p = communicationProfile();
   if (!p) return;
   let phone = target === "family" ? p.emergencyContact : p.doctorPhone;
   if (!phone) { UI.toast("Phone number not in profile.", "err"); return; }

@@ -24,7 +24,7 @@ A phone fingerprint reader or Face ID can authenticate the owner of that phone. 
 
 Use the HTTPS address supplied by the GEDIC administrator. Do not use an unofficial copy of the page.
 
-The theme control at the bottom of the screen offers:
+The theme control in the page header offers:
 
 - Light mode
 - Dark mode
@@ -34,7 +34,7 @@ The theme control at the bottom of the screen offers:
 
 ### 4.1 Create an account
 
-1. Select **Register Free**.
+1. Select **Create account**.
 2. Keep **Patient** selected. Doctor, hospital, and responder accounts are administrator-provisioned.
 3. Enter an email address, a passphrase of at least 12 characters, and an optional account phone number.
 4. Enter the medical information you want GEDIC to store.
@@ -79,10 +79,14 @@ When sharing is enabled, open **QR Card**. You can:
 - show the QR on the phone;
 - download the QR image;
 - copy the emergency link;
-- print a wallet card;
+- preview the emergency card, then print or save it as a PDF;
 - select **Revoke & Rotate** to invalidate the old link and create a new one.
 
 Treat the QR link like sensitive information. Anyone holding the current link can read the published emergency summary. Rotate it if a card, screenshot, or link is lost or shared with the wrong person.
+
+On localhost, the QR points back to the same computer. A different phone needs the hosted website's QR and a real account; local demo records are stored only in their browser.
+
+Select **Print Card** to inspect the card inside GEDIC. **Print or save PDF** opens the browser print dialog. The default paper layout is A5 landscape; adjust scaling in the print dialog if needed. Long medical details can require more space.
 
 ### 4.6 Emergency actions
 
@@ -135,7 +139,7 @@ Hospital staff cannot create a patient identity on the patient's behalf, delete 
 
 ## 8. Responder and biometric guide
 
-The free production build disables real biometric matching. Local demo mode contains a clearly labelled simulation for explaining the proposed workflow.
+The free production build disables real biometric matching. Local demo mode contains a clearly labelled simulation for explaining the proposed workflow. To try it, choose **Use sample incident details**, tick the practice confirmation, then choose **Open demo profile**. The demo selects the first sample patient and records a local access event; it does not identify anyone through biometrics.
 
 A legitimate production biometric attempt would require the responder to:
 
@@ -206,7 +210,7 @@ The patient probably disabled sharing or rotated the token. Use the newest card 
 - Read the persistent GPS status shown above the location buttons. It reports permission, capture progress, coordinates, accuracy radius, and capture time.
 - If it says **Location blocked**, open the browser's site settings for GEDIC, change Location to **Allow**, and reload the page.
 - If it times out, move near a window or outdoors and retry. Indoors, laptops and desktops may provide only Wi-Fi-based positioning.
-- Treat an accuracy value above `±100 m` as a low-accuracy estimate and confirm the pin before sharing it.
+- Treat an accuracy value above `Â±100 m` as a low-accuracy estimate and confirm the pin before sharing it.
 - GEDIC does not silently substitute an estimated address.
 
 ### Biometric button is disabled
